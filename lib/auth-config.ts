@@ -21,8 +21,8 @@ export const authOptions: NextAuthConfig = {
 
         // Lazy import Prisma to avoid Edge Runtime issues in middleware
         // Using dynamic import with a variable to prevent static analysis
-        const prismaModule = "./prisma"
-        const { prisma } = await import(prismaModule)
+        const prismaModule = await import("@/lib/prisma")
+        const { prisma } = prismaModule
         const bcrypt = await import("bcryptjs")
 
         const email = credentials.email as string

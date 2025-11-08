@@ -102,7 +102,7 @@ export default function Sidebar({ role, userName, onClose }: SidebarProps) {
         </button>
       </div>
 
-      <div className="p-6 flex-shrink-0">
+      <div className="p-6 shrink-0">
         <h1 className="text-xl sm:text-2xl font-bold mb-2 text-white">Asset Manager</h1>
         <p className="text-gray-200 text-sm font-medium truncate">{userName}</p>
         <p className="text-gray-300 text-xs mt-1 capitalize font-medium">{role.toLowerCase().replace("_", " ")}</p>
@@ -122,7 +122,7 @@ export default function Sidebar({ role, userName, onClose }: SidebarProps) {
           </Link>
         ))}
       </nav>
-      <div className="p-6 border-t border-gray-800 flex-shrink-0">
+      <div className="p-6 border-t border-gray-800 shrink-0">
         <button
           onClick={() => {
             handleLinkClick()

@@ -8,6 +8,8 @@ import { z } from "zod"
 const approveSchema = z.object({
   status: z.enum(["APPROVED", "REJECTED"]),
   comments: z.string().optional(),
+  issuanceCondition: z.string().optional(),
+  issuanceNotes: z.string().optional(),
 })
 
 export async function POST(

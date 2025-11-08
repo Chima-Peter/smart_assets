@@ -21,6 +21,12 @@ interface Request {
   approvedAt: string | null
   fulfilledAt: string | null
   returnedAt: string | null
+  issuedAt: string | null
+  issuanceCondition: string | null
+  issuanceNotes: string | null
+  returnCondition: string | null
+  returnNotes: string | null
+  verifiedAt: string | null
   approvals: Array<{
     status: string
     comments: string | null
@@ -288,7 +294,7 @@ export default function LecturerMyRequestsPage() {
                                   {" by "}
                                   <span className="text-gray-900 font-medium">{approval.approvedByUser.name}</span>
                                   {approval.comments && (
-                                    <div className="text-gray-600 mt-1">"{approval.comments}"</div>
+                                    <div className="text-gray-600 mt-1">&quot;{approval.comments}&quot;</div>
                                   )}
                                 </div>
                               ))}
@@ -321,6 +327,7 @@ export default function LecturerMyRequestsPage() {
                   </label>
                   <select
                     value={returnData.returnCondition}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onChange={(e) => setReturnData({ ...returnData, returnCondition: e.target.value as any })}
                     className="w-full px-4 py-2 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-900 font-bold"
                   >

@@ -46,7 +46,12 @@ export async function GET() {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 })
       }
       // Officers can only see users in their department
-      const where = session.user.department ? { department: session.user.department } : {}
+      // Fetch the user to get their department
+      const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { department: true }
+      })
+      const where = currentUser?.department ? { department: currentUser.department } : {}
       const users = await prisma.user.findMany({
         where,
         select: {
@@ -93,11 +98,16 @@ export async function POST(req: NextRequest) {
       if (data.role === UserRole.FACULTY_ADMIN) {
         return NextResponse.json({ error: "Cannot assign Faculty Admin role" }, { status: 403 })
       }
-      if (data.department && data.department !== session.user.department) {
+      // Fetch the user to get their department
+      const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { department: true }
+      })
+      if (data.department && data.department !== currentUser?.department) {
         return NextResponse.json({ error: "Cannot create users outside your department" }, { status: 403 })
       }
       // Force department to match officer's department
-      data.department = session.user.department || data.department
+      data.department = currentUser?.department || data.department
     } else {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }

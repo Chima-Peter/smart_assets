@@ -5,47 +5,47 @@ import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
 import LoadingSpinner from "@/components/LoadingSpinner"
 
-interface SummaryData {
-  assets?: {
-    total: number
-    available: number
-    allocated: number
-  }
-  requests?: {
-    total: number
-    pending: number
-  }
-  transfers?: {
-    total: number
-    pending: number
-  }
-}
-
-interface ReportData extends SummaryData {
-  assets?: Array<{
-    id: string
-    name: string
-    assetCode: string
-    type: string
-    status: string
-    registeredByUser: { name: string }
-    allocatedToUser: { name: string } | null
-  }>
-  requests?: Array<{
-    id: string
-    asset: { name: string; assetCode: string }
-    requestedByUser: { name: string; email: string }
-    status: string
-    requestedAt: string
-  }>
-  transfers?: Array<{
-    id: string
-    asset: { name: string; assetCode: string }
-    fromUser: { name: string; email: string }
-    toUser: { name: string; email: string }
-    status: string
-    requestedAt: string
-  }>
+type ReportData = {
+  assets?: 
+    | {
+        total: number
+        available: number
+        allocated: number
+      }
+    | Array<{
+        id: string
+        name: string
+        assetCode: string
+        type: string
+        status: string
+        registeredByUser: { name: string }
+        allocatedToUser: { name: string } | null
+      }>
+  requests?: 
+    | {
+        total: number
+        pending: number
+      }
+    | Array<{
+        id: string
+        asset: { name: string; assetCode: string }
+        requestedByUser: { name: string; email: string }
+        status: string
+        requestedAt: string
+      }>
+  transfers?: 
+    | {
+        total: number
+        pending: number
+      }
+    | Array<{
+        id: string
+        asset: { name: string; assetCode: string }
+        fromUser: { name: string; email: string }
+        toUser: { name: string; email: string }
+        status: string
+        requestedAt: string
+      }>
 }
 
 export default function AdminReportsPage() {
@@ -197,9 +197,9 @@ export default function AdminReportsPage() {
           </div>
         ) : data && (Array.isArray(data.assets) || Array.isArray(data.requests) || Array.isArray(data.transfers)) ? (
           <>
-            {(reportType === "assets" && (!data.assets || data.assets.length === 0)) ||
-             (reportType === "requests" && (!data.requests || data.requests.length === 0)) ||
-             (reportType === "transfers" && (!data.transfers || data.transfers.length === 0)) ? (
+            {(reportType === "assets" && (!data.assets || !Array.isArray(data.assets) || data.assets.length === 0)) ||
+              (reportType === "requests" && (!data.requests || !Array.isArray(data.requests) || data.requests.length === 0)) ||
+              (reportType === "transfers" && (!data.transfers || !Array.isArray(data.transfers) || data.transfers.length === 0)) ? (
               <div className="bg-white p-8 rounded-lg shadow border border-gray-300 text-center">
                 <p className="text-gray-900 font-medium">No data available for this report type.</p>
               </div>
@@ -239,7 +239,7 @@ export default function AdminReportsPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-300">
-                      {reportType === "assets" && data.assets?.map((asset) => (
+                      {reportType === "assets" && Array.isArray(data.assets) && data.assets.map((asset) => (
                         <tr key={asset.id} className="hover:bg-gray-100">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-bold text-gray-900">{asset.assetCode}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{asset.name}</td>
@@ -249,7 +249,7 @@ export default function AdminReportsPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{asset.allocatedToUser?.name || "—"}</td>
                         </tr>
                       ))}
-                      {reportType === "requests" && data.requests?.map((request) => (
+                      {reportType === "requests" && Array.isArray(data.requests) && data.requests.map((request) => (
                         <tr key={request.id} className="hover:bg-gray-100">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-bold text-gray-900">{request.asset?.name || "—"}</div>
@@ -265,7 +265,7 @@ export default function AdminReportsPage() {
                           </td>
                         </tr>
                       ))}
-                      {reportType === "transfers" && data.transfers?.map((transfer) => (
+                      {reportType === "transfers" && Array.isArray(data.transfers) && data.transfers.map((transfer) => (
                         <tr key={transfer.id} className="hover:bg-gray-100">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-bold text-gray-900">{transfer.asset?.name || "—"}</div>
@@ -291,11 +291,11 @@ export default function AdminReportsPage() {
                 <div className="bg-gray-100 px-6 py-3 border-t-2 border-gray-300">
                   <p className="text-sm font-bold text-gray-900">
                     Showing{" "}
-                    {reportType === "assets" && data.assets
+                    {reportType === "assets" && Array.isArray(data.assets)
                       ? data.assets.length
-                      : reportType === "requests" && data.requests
+                      : reportType === "requests" && Array.isArray(data.requests)
                       ? data.requests.length
-                      : reportType === "transfers" && data.transfers
+                      : reportType === "transfers" && Array.isArray(data.transfers)
                       ? data.transfers.length
                       : 0}{" "}
                     {reportType === "assets"
@@ -303,9 +303,9 @@ export default function AdminReportsPage() {
                       : reportType === "requests"
                       ? "request"
                       : "transfer"}
-                    {(reportType === "assets" && data.assets && data.assets.length !== 1) ||
-                    (reportType === "requests" && data.requests && data.requests.length !== 1) ||
-                    (reportType === "transfers" && data.transfers && data.transfers.length !== 1)
+                    {(reportType === "assets" && Array.isArray(data.assets) && data.assets.length !== 1) ||
+                    (reportType === "requests" && Array.isArray(data.requests) && data.requests.length !== 1) ||
+                    (reportType === "transfers" && Array.isArray(data.transfers) && data.transfers.length !== 1)
                       ? "s"
                       : ""}
                   </p>

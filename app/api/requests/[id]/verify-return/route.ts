@@ -64,7 +64,7 @@ export async function POST(
       })
 
       // Update asset status based on verified condition
-      let assetStatus = AssetStatus.AVAILABLE
+      let assetStatus: AssetStatus = AssetStatus.AVAILABLE
       if (verifiedCondition === "DAMAGED" || verifiedCondition === "NEEDS_REPAIR") {
         assetStatus = AssetStatus.MAINTENANCE
       } else if (verifiedCondition === "LOST") {

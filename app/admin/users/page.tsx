@@ -20,7 +20,14 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    email: string
+    password: string
+    name: string
+    role: UserRole
+    department: string
+    employeeId: string
+  }>({
     email: "",
     password: "",
     name: "",
