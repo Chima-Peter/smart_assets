@@ -30,6 +30,7 @@ export default function Sidebar({ role, userName, onClose }: SidebarProps) {
     { href: "/admin/reports", label: "Reports", icon: "📈" },
     { href: "/admin/users", label: "Users", icon: "👥" },
     { href: "/admin/activity-logs", label: "Activity Logs", icon: "📝" },
+    { href: "/admin/system-config", label: "System Config", icon: "⚙️" },
     { href: "/notifications", label: "Notifications", icon: "🔔" },
   ]
 

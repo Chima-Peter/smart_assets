@@ -73,7 +73,7 @@ export default function AdminActivityLogsPage() {
 
         {/* Filters */}
         <div className="bg-white p-4 rounded-lg shadow mb-6 border border-gray-300">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-2">Entity Type</label>
               <select
@@ -125,7 +125,7 @@ export default function AdminActivityLogsPage() {
                 className="w-full px-3 py-2 border-2 border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
               />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end sm:col-span-2 xl:col-span-1">
               <button
                 onClick={() => setFilters({ entityType: "", action: "", userId: "", startDate: "", endDate: "" })}
                 className="w-full px-4 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg transition-colors font-bold"
@@ -147,7 +147,42 @@ export default function AdminActivityLogsPage() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow border border-gray-300 overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4 p-4">
+              {logs.map((log) => (
+                <div key={log.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="text-sm font-bold text-gray-900">{log.user?.name || "System"}</div>
+                        <div className="text-xs text-gray-700">{log.user?.email || ""}</div>
+                        {log.user && (
+                          <div className="text-xs text-gray-600 capitalize">{log.user.role.toLowerCase().replace("_", " ")}</div>
+                        )}
+                      </div>
+                      <span className="px-2 py-1 text-xs font-bold rounded bg-blue-100 text-blue-800">
+                        {log.action}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-600">Entity:</div>
+                      <div className="text-sm text-gray-900">{log.entityType}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-600">Description:</div>
+                      <div className="text-sm text-gray-900">{log.description}</div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                      <span>{new Date(log.createdAt).toLocaleString()}</span>
+                      {log.ipAddress && <span className="font-mono">IP: {log.ipAddress}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-800">
                   <tr>

@@ -58,7 +58,32 @@ export default function LecturerActivityLogsPage() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow border border-gray-300 overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4 p-4">
+              {logs.map((log) => (
+                <div key={log.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div className="text-xs text-gray-600">{new Date(log.createdAt).toLocaleString()}</div>
+                      <span className="px-2 py-1 text-xs font-bold rounded bg-blue-100 text-blue-800">
+                        {log.action}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-600">Entity:</div>
+                      <div className="text-sm text-gray-900">{log.entityType}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-600">Description:</div>
+                      <div className="text-sm text-gray-900">{log.description}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-800">
                   <tr>

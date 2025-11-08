@@ -58,6 +58,8 @@ export default function NotificationsPage() {
       })
       if (res.ok) {
         fetchNotifications()
+        // Trigger a custom event to refresh the notification bell
+        window.dispatchEvent(new CustomEvent("notificationsUpdated"))
       }
     } catch (error) {
       console.error("Error marking notifications as read:", error)
@@ -73,6 +75,8 @@ export default function NotificationsPage() {
       })
       if (res.ok) {
         fetchNotifications()
+        // Trigger a custom event to refresh the notification bell
+        window.dispatchEvent(new CustomEvent("notificationsUpdated"))
       }
     } catch (error) {
       console.error("Error marking all as read:", error)
@@ -202,12 +206,12 @@ export default function NotificationsPage() {
                   notification.read ? "border-gray-300" : "border-blue-500 bg-blue-50"
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className="text-2xl">{getNotificationIcon(notification.type)}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-gray-900">{notification.title}</h3>
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+                  <div className="flex items-start gap-3 flex-1 w-full">
+                    <div className="text-2xl flex-shrink-0">{getNotificationIcon(notification.type)}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900">{notification.title}</h3>
                         <span
                           className={`px-2 py-1 text-xs font-bold rounded border ${getNotificationColor(
                             notification.type
@@ -223,7 +227,7 @@ export default function NotificationsPage() {
                       </div>
                       <p className="text-sm text-gray-700 mb-2">{notification.message}</p>
                       {notification.relatedRequest && (
-                        <p className="text-xs text-gray-600 font-medium">
+                        <p className="text-xs text-gray-600 font-medium break-words">
                           Asset: {notification.relatedRequest.asset.name} ({notification.relatedRequest.asset.assetCode})
                         </p>
                       )}
@@ -235,7 +239,7 @@ export default function NotificationsPage() {
                   {!notification.read && (
                     <button
                       onClick={() => markAsRead([notification.id])}
-                      className="px-3 py-1 text-xs font-bold bg-gray-200 text-gray-800 hover:bg-gray-300 rounded transition-colors"
+                      className="w-full sm:w-auto px-3 py-1 text-xs font-bold bg-gray-200 text-gray-800 hover:bg-gray-300 rounded transition-colors flex-shrink-0"
                     >
                       Mark Read
                     </button>

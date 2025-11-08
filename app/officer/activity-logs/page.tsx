@@ -71,7 +71,7 @@ export default function OfficerActivityLogsPage() {
 
         {/* Filters */}
         <div className="bg-white p-4 rounded-lg shadow mb-6 border border-gray-300">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-2">Entity Type</label>
               <select
@@ -122,7 +122,7 @@ export default function OfficerActivityLogsPage() {
           <div className="mt-4">
             <button
               onClick={() => setFilters({ entityType: "", action: "", startDate: "", endDate: "" })}
-              className="px-4 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg transition-colors font-bold"
+              className="w-full sm:w-auto px-4 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg transition-colors font-bold"
             >
               Clear Filters
             </button>
@@ -140,7 +140,38 @@ export default function OfficerActivityLogsPage() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow border border-gray-300 overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4 p-4">
+              {logs.map((log) => (
+                <div key={log.id} className="bg-gray-50 rounded-lg border border-gray-300 p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="text-sm font-bold text-gray-900">{log.user?.name || "System"}</div>
+                        <div className="text-xs text-gray-700">{log.user?.email || ""}</div>
+                      </div>
+                      <span className="px-2 py-1 text-xs font-bold rounded bg-blue-100 text-blue-800">
+                        {log.action}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-600">Entity:</div>
+                      <div className="text-sm text-gray-900">{log.entityType}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-600">Description:</div>
+                      <div className="text-sm text-gray-900">{log.description}</div>
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      {new Date(log.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-800">
                   <tr>

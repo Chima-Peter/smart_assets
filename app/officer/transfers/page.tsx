@@ -106,12 +106,20 @@ export default function OfficerTransfersPage() {
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Manage Transfers</h1>
-          <Link
-            href="/officer/dashboard"
-            className="w-full sm:w-auto px-4 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-bold shadow-lg text-center sm:text-left"
-          >
-            ← Back to Dashboard
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+            <Link
+              href="/officer/transfers/create"
+              className="w-full sm:w-auto px-4 py-2 bg-blue-700 text-white hover:bg-blue-800 rounded-lg transition-colors font-bold shadow-lg text-center"
+            >
+              + Initiate Transfer
+            </Link>
+            <Link
+              href="/officer/dashboard"
+              className="w-full sm:w-auto px-4 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-bold shadow-lg text-center sm:text-left"
+            >
+              ← Back to Dashboard
+            </Link>
+          </div>
         </div>
 
         {/* Messages */}

@@ -17,6 +17,9 @@ interface Asset {
   category: string | null
   location: string | null
   isArchived: boolean
+  quantity: number | null
+  minStockLevel: number | null
+  unit: string | null
   registeredByUser: {
     name: string
     email: string
@@ -234,6 +237,9 @@ export default function AdminAssetsPage() {
                       Location
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                      Quantity
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -272,6 +278,23 @@ export default function AdminAssetsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {asset.location || "—"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {asset.type === "CONSUMABLE" && asset.quantity !== null ? (
+                          <div>
+                            <div className="font-bold text-gray-900">
+                              {asset.quantity} {asset.unit || "units"}
+                            </div>
+                            {asset.minStockLevel !== null && asset.quantity <= asset.minStockLevel && (
+                              <div className="text-xs text-red-700 font-bold">⚠️ Low Stock</div>
+                            )}
+                            {asset.minStockLevel !== null && (
+                              <div className="text-xs text-gray-600">Min: {asset.minStockLevel}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
