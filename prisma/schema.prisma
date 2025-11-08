@@ -34,6 +34,12 @@ enum AssetType {
   OTHER
 }
 
+enum AssetCategory {
+  RETURNABLE
+  CONSUMABLE
+  EXPIRABLE
+}
+
 enum RequestStatus {
   PENDING
   APPROVED
@@ -64,9 +70,12 @@ model User {
   registeredAssets Asset[] @relation("RegisteredAssets")
   allocatedAssets Asset[] @relation("AllocatedAssets")
   requests      Request[]
+  issuedRequests Request[] @relation("IssuedRequests")
+  verifiedReturns Request[] @relation("VerifiedReturns")
   transfers    Transfer[] @relation("TransferFrom")
   receivedTransfers Transfer[] @relation("TransferTo")
   approvals     Approval[]
+  notifications Notification[]
 }
 
 model Asset {
@@ -77,12 +86,18 @@ model Asset {
   type          AssetType
   status        AssetStatus @default(AVAILABLE)
   category      String?
+  assetCategory AssetCategory?
   location      String?
+  room          String?
   purchaseDate  DateTime?
   purchasePrice Float?
   serialNumber  String?
   manufacturer  String?
   model         String?
+  expiryDate    DateTime?
+  documentUrls  String?     // JSON array of document URLs
+  isArchived    Boolean     @default(false)
+  archivedAt    DateTime?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -108,10 +123,35 @@ model Request {
   fulfilledAt   DateTime?
   returnedAt    DateTime?
   notes         String?
+  // Issuance tracking
+  issuedBy      String?
+  issuedByUser  User?         @relation("IssuedRequests", fields: [issuedBy], references: [id])
+  issuedAt      DateTime?
+  issuanceCondition String?   // e.g., "FUNCTIONAL", "DAMAGED", "GOOD"
+  issuanceNotes String?
+  // Return tracking
+  returnCondition String?     // e.g., "FUNCTIONAL", "DAMAGED", "LOST", "NEEDS_REPAIR"
+  returnNotes    String?
+  verifiedBy     String?
+  verifiedByUser User?        @relation("VerifiedReturns", fields: [verifiedBy], references: [id])
+  verifiedAt     DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   approvals     Approval[]
+}
+
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  type          String    // "REQUEST_APPROVED", "REQUEST_REJECTED", "REQUEST_FULFILLED", "ASSET_RETURNED"
+  title         String
+  message       String
+  relatedRequestId String?
+  relatedRequest Request? @relation(fields: [relatedRequestId], references: [id])
+  read          Boolean   @default(false)
+  createdAt     DateTime  @default(now())
 }
 
 model Transfer {

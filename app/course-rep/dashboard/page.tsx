@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react"
 import DashboardLayout from "@/components/DashboardLayout"
-
-interface Asset {
-  status: string
-}
+import LoadingSpinner from "@/components/LoadingSpinner"
 
 interface DashboardStats {
   availableConsumables: number
@@ -14,50 +11,59 @@ interface DashboardStats {
 
 export default function CourseRepDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     Promise.all([
       fetch("/api/assets?type=CONSUMABLE").then((res) => res.json()),
       fetch("/api/assets?type=TEACHING_AID").then((res) => res.json()),
-    ]).then(([consumables, teachingAids]: [Asset[], Asset[]]) => {
+    ]).then(([consumables, teachingAids]) => {
       setStats({
-        availableConsumables: consumables.filter((a) => a.status === "AVAILABLE").length,
-        availableTeachingAids: teachingAids.filter((a) => a.status === "AVAILABLE").length,
+        availableConsumables: consumables.length,
+        availableTeachingAids: teachingAids.length,
       })
+      setLoading(false)
+    }).catch((error) => {
+      console.error("Error fetching stats:", error)
+      setLoading(false)
     })
   }, [])
 
   return (
     <DashboardLayout>
       <div>
-        <h1 className="text-3xl font-bold mb-8">Course Representative Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-8 text-gray-900">Course Representative Dashboard</h1>
         
-        {stats && (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <LoadingSpinner size="lg" text="Loading dashboard..." />
+          </div>
+        ) : stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Available Consumables</h3>
-              <p className="text-3xl font-bold text-indigo-600">{stats.availableConsumables || 0}</p>
+            <div className="bg-white p-6 rounded-lg shadow border-2 border-gray-800">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Available Consumables</h3>
+              <p className="text-3xl font-bold text-gray-900">{stats.availableConsumables || 0}</p>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Available Teaching Aids</h3>
-              <p className="text-3xl font-bold text-green-600">{stats.availableTeachingAids || 0}</p>
+            <div className="bg-white p-6 rounded-lg shadow border-2 border-gray-800">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Available Teaching Aids</h3>
+              <p className="text-3xl font-bold text-gray-900">{stats.availableTeachingAids || 0}</p>
             </div>
           </div>
         )}
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">View Available Items</h2>
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-300">
+          <h2 className="text-xl font-bold mb-4 text-gray-900">View Available Items</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <a
               href="/course-rep/consumables"
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-500 transition-colors text-center"
+              className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               View Consumables
             </a>
             <a
               href="/course-rep/teaching-aids"
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-500 transition-colors text-center"
+              className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               View Teaching Aids
             </a>

@@ -65,17 +65,17 @@ export default function Sidebar({ role, userName }: SidebarProps) {
   return (
     <div className="w-64 bg-gray-900 text-white min-h-screen">
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-2">Asset Manager</h1>
-        <p className="text-gray-400 text-sm">{userName}</p>
-        <p className="text-gray-500 text-xs mt-1 capitalize">{role.toLowerCase().replace("_", " ")}</p>
+        <h1 className="text-2xl font-bold mb-2 text-white">Asset Manager</h1>
+        <p className="text-gray-200 text-sm font-medium">{userName}</p>
+        <p className="text-gray-300 text-xs mt-1 capitalize font-medium">{role.toLowerCase().replace("_", " ")}</p>
       </div>
       <nav className="mt-8">
         {links.map((link) => (
           <Link
             key={link.href}
             href={link.href}
-            className={`flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors ${
-              isActive(link.href) ? "bg-gray-800 text-white border-r-4 border-indigo-500" : ""
+            className={`flex items-center px-6 py-3 text-gray-200 hover:bg-gray-800 hover:text-white transition-colors font-medium ${
+              isActive(link.href) ? "bg-gray-800 text-white border-r-4 border-white" : ""
             }`}
           >
             <span className="mr-3">{link.icon}</span>
@@ -86,7 +86,7 @@ export default function Sidebar({ role, userName }: SidebarProps) {
       <div className="absolute bottom-0 w-64 p-6">
         <button
           onClick={() => signOut({ callbackUrl: "/auth/signin" })}
-          className="w-full flex items-center px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded transition-colors"
+          className="w-full flex items-center px-4 py-2 text-gray-200 hover:bg-gray-800 hover:text-white rounded transition-colors font-bold border-2 border-gray-700 hover:border-white"
         >
           <span className="mr-3">🚪</span>
           Sign Out

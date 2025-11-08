@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { hasPermission } from "@/lib/rbac"
+import { AssetStatus, RequestStatus, TransferStatus } from "@/lib/prisma/enums"
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,12 +29,12 @@ export async function GET(req: NextRequest) {
         pendingTransfers
       ] = await Promise.all([
         prisma.asset.count(),
-        prisma.asset.count({ where: { status: "AVAILABLE" } }),
-        prisma.asset.count({ where: { status: "ALLOCATED" } }),
+        prisma.asset.count({ where: { status: AssetStatus.AVAILABLE } }),
+        prisma.asset.count({ where: { status: AssetStatus.ALLOCATED } }),
         prisma.request.count(),
-        prisma.request.count({ where: { status: "PENDING" } }),
+        prisma.request.count({ where: { status: RequestStatus.PENDING } }),
         prisma.transfer.count(),
-        prisma.transfer.count({ where: { status: "PENDING" } })
+        prisma.transfer.count({ where: { status: TransferStatus.PENDING } })
       ])
 
       return NextResponse.json({

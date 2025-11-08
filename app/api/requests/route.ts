@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { hasPermission } from "@/lib/rbac"
-import { UserRole, RequestStatus } from "@/lib/prisma/enums"
+import { UserRole, RequestStatus, AssetStatus } from "@/lib/prisma/enums"
 import { z } from "zod"
 
 const requestSchema = z.object({
@@ -29,8 +29,22 @@ export async function GET(req: NextRequest) {
           ...(status ? { status: status as RequestStatus } : {})
         },
         include: {
-          asset: true,
+          asset: {
+            select: {
+              id: true,
+              name: true,
+              assetCode: true,
+              type: true,
+              assetCategory: true
+            }
+          },
           requestedByUser: {
+            select: { name: true, email: true }
+          },
+          issuedByUser: {
+            select: { name: true, email: true }
+          },
+          verifiedByUser: {
             select: { name: true, email: true }
           },
           approvals: {
@@ -55,8 +69,22 @@ export async function GET(req: NextRequest) {
     const requests = await prisma.request.findMany({
       where,
       include: {
-        asset: true,
+        asset: {
+          select: {
+            id: true,
+            name: true,
+            assetCode: true,
+            type: true,
+            assetCategory: true
+          }
+        },
         requestedByUser: {
+          select: { name: true, email: true }
+        },
+        issuedByUser: {
+          select: { name: true, email: true }
+        },
+        verifiedByUser: {
           select: { name: true, email: true }
         },
         approvals: {
@@ -100,7 +128,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 })
     }
 
-    if (asset.status !== "AVAILABLE") {
+    if (asset.status !== AssetStatus.AVAILABLE) {
       return NextResponse.json({ error: "Asset is not available" }, { status: 400 })
     }
 

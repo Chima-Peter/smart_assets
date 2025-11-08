@@ -12,7 +12,7 @@ const approveSchema = z.object({
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -20,8 +20,9 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { id } = await params
     const transfer = await prisma.transfer.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { 
         asset: true,
         fromUser: { select: { department: true } },
@@ -53,7 +54,7 @@ export async function POST(
 
     const updatedTransfer = await prisma.$transaction(async (tx) => {
       const tr = await tx.transfer.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           status: status as TransferStatus,
           approvedAt: status === "APPROVED" ? new Date() : null,
@@ -62,7 +63,7 @@ export async function POST(
 
       await tx.approval.create({
         data: {
-          transferId: params.id,
+          transferId: id,
           approvedBy: session.user.id,
           status,
           comments
@@ -79,7 +80,7 @@ export async function POST(
         })
 
         await tx.transfer.update({
-          where: { id: params.id },
+          where: { id },
           data: {
             completedAt: new Date()
           }

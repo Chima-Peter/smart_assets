@@ -12,7 +12,7 @@ const approveSchema = z.object({
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -24,11 +24,12 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
+    const { id } = await params
     const body = await req.json()
-    const { status, comments } = approveSchema.parse(body)
+    const { status, comments, issuanceCondition, issuanceNotes } = approveSchema.parse(body)
 
     const request = await prisma.request.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { asset: true }
     })
 
@@ -42,17 +43,44 @@ export async function POST(
 
     // Update request and asset status
     const updatedRequest = await prisma.$transaction(async (tx) => {
+      const updateData: {
+        status: RequestStatus
+        approvedAt: Date
+        issuedBy?: string
+        issuedAt?: Date
+        issuanceCondition?: string
+        issuanceNotes?: string
+        fulfilledAt?: Date
+      } = {
+        status: status as RequestStatus,
+        approvedAt: new Date(),
+      }
+
+      if (status === "APPROVED") {
+        updateData.issuedBy = session.user.id
+        updateData.issuedAt = new Date()
+        updateData.fulfilledAt = new Date()
+        if (issuanceCondition) updateData.issuanceCondition = issuanceCondition
+        if (issuanceNotes) updateData.issuanceNotes = issuanceNotes
+      }
+
       const req = await tx.request.update({
-        where: { id: params.id },
-        data: {
-          status: status as RequestStatus,
-          approvedAt: new Date(),
+        where: { id },
+        data: updateData,
+        include: {
+          requestedByUser: {
+            select: { name: true, email: true }
+          },
+          issuedByUser: {
+            select: { name: true, email: true }
+          },
+          asset: true
         }
       })
 
       await tx.approval.create({
         data: {
-          requestId: params.id,
+          requestId: id,
           approvedBy: session.user.id,
           status,
           comments
@@ -68,10 +96,25 @@ export async function POST(
           }
         })
 
-        await tx.request.update({
-          where: { id: params.id },
+        // Create notification for requester
+        await tx.notification.create({
           data: {
-            fulfilledAt: new Date()
+            userId: request.requestedBy,
+            type: "REQUEST_APPROVED",
+            title: "Asset Request Approved",
+            message: `Your request for "${req.asset.name}" has been approved.`,
+            relatedRequestId: id
+          }
+        })
+      } else {
+        // Create notification for rejection
+        await tx.notification.create({
+          data: {
+            userId: request.requestedBy,
+            type: "REQUEST_REJECTED",
+            title: "Asset Request Rejected",
+            message: `Your request for "${req.asset.name}" has been rejected.${comments ? ` Reason: ${comments}` : ""}`,
+            relatedRequestId: id
           }
         })
       }

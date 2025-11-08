@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import Sidebar from "./Sidebar"
+import LoadingSpinner from "./LoadingSpinner"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -21,8 +22,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="lg" text="Loading dashboard..." />
       </div>
     )
   }

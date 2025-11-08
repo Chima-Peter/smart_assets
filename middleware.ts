@@ -6,6 +6,11 @@ export default auth((req) => {
   const session = req.auth
   const path = req.nextUrl.pathname
 
+  // Allow NextAuth API routes to pass through
+  if (path.startsWith("/api/auth")) {
+    return NextResponse.next()
+  }
+
   if (!session?.user) {
     return NextResponse.redirect(new URL("/auth/signin", req.url))
   }

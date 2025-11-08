@@ -11,12 +11,17 @@ const assetSchema = z.object({
   assetCode: z.string().min(1),
   type: z.nativeEnum(AssetType),
   category: z.string().optional(),
+  assetCategory: z.enum(["RETURNABLE", "CONSUMABLE", "EXPIRABLE"]).optional(),
   location: z.string().optional(),
+  room: z.string().optional(),
   purchaseDate: z.string().optional(),
   purchasePrice: z.number().optional(),
   serialNumber: z.string().optional(),
   manufacturer: z.string().optional(),
   model: z.string().optional(),
+  expiryDate: z.string().optional(),
+  documentUrls: z.array(z.string().url()).optional(),
+  allocatedTo: z.string().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -54,9 +59,15 @@ export async function GET(req: NextRequest) {
     const where: {
       type?: AssetType
       status?: AssetStatus
+      allocatedTo?: string
     } = {}
     if (type) where.type = type as AssetType
     if (status) where.status = status as AssetStatus
+    
+    // Lecturers can only see assets allocated to them when status is ALLOCATED
+    if (role === UserRole.LECTURER && status === AssetStatus.ALLOCATED) {
+      where.allocatedTo = session.user.id
+    }
 
     const assets = await prisma.asset.findMany({
       where,
@@ -105,11 +116,16 @@ export async function POST(req: NextRequest) {
       data: {
         ...data,
         purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
+        expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+        documentUrls: data.documentUrls ? JSON.stringify(data.documentUrls) : null,
         registeredBy: session.user.id,
-        status: AssetStatus.AVAILABLE
+        status: data.allocatedTo ? AssetStatus.ALLOCATED : AssetStatus.AVAILABLE
       },
       include: {
         registeredByUser: {
+          select: { name: true, email: true }
+        },
+        allocatedToUser: {
           select: { name: true, email: true }
         }
       }
