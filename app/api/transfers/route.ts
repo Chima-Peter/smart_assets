@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (!hasPermission(session.user.role, "CREATE_TRANSFER")) {
+    // Check permissions for initiating transfers
+    if (!hasPermission(session.user.role, "INITIATE_TRANSFERS")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -80,7 +81,12 @@ export async function POST(req: NextRequest) {
 
     // Check if asset exists and is allocated
     const asset = await prisma.asset.findUnique({
-      where: { id: data.assetId }
+      where: { id: data.assetId },
+      include: {
+        allocatedToUser: {
+          select: { department: true }
+        }
+      }
     })
 
     if (!asset) {
@@ -91,26 +97,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Asset is not allocated" }, { status: 400 })
     }
 
-    // Check if user owns the asset or is an officer
-    if (session.user.role !== UserRole.DEPARTMENTAL_OFFICER && 
-        session.user.role !== UserRole.FACULTY_ADMIN &&
-        asset.allocatedTo !== session.user.id) {
-      return NextResponse.json({ error: "You don't own this asset" }, { status: 403 })
+    // Get toUser to determine transfer type
+    const toUser = await prisma.user.findUnique({
+      where: { id: data.toUserId },
+      select: { department: true }
+    })
+
+    if (!toUser) {
+      return NextResponse.json({ error: "Recipient user not found" }, { status: 404 })
     }
+
+    // Determine transfer type
+    const fromDepartment = asset.allocatedToUser?.department
+    const toDepartment = toUser.department
+    const transferType = (fromDepartment && toDepartment && fromDepartment === toDepartment) 
+      ? "INTRA_DEPARTMENTAL" 
+      : "INTER_DEPARTMENTAL"
 
     const transfer = await prisma.transfer.create({
       data: {
         ...data,
         fromUserId: asset.allocatedTo || session.user.id,
+        initiatedBy: session.user.id,
+        transferType,
         status: TransferStatus.PENDING
       },
       include: {
         asset: true,
         fromUser: {
-          select: { name: true, email: true }
+          select: { name: true, email: true, department: true }
         },
         toUser: {
-          select: { name: true, email: true }
+          select: { name: true, email: true, department: true }
         }
       }
     })
@@ -120,6 +138,24 @@ export async function POST(req: NextRequest) {
       where: { id: data.assetId },
       data: { status: AssetStatus.TRANSFER_PENDING }
     })
+
+    // Create notification for Faculty Admin
+    const admins = await prisma.user.findMany({
+      where: { role: UserRole.FACULTY_ADMIN }
+    })
+
+    await Promise.all(
+      admins.map(admin =>
+        prisma.notification.create({
+          data: {
+            userId: admin.id,
+            type: "TRANSFER_PENDING",
+            title: "Transfer Request Pending",
+            message: `${session.user.name || "Officer"} initiated a ${transferType.toLowerCase().replace("_", "-")} transfer of "${asset.name}" from ${transfer.fromUser.name} to ${transfer.toUser.name}`,
+          }
+        })
+      )
+    )
 
     return NextResponse.json(transfer, { status: 201 })
   } catch (error) {

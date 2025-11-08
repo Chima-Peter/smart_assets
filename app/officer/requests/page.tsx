@@ -25,22 +25,22 @@ interface Request {
   fulfilledAt: string | null
   returnedAt: string | null
   notes: string | null
-  issuedBy: string | null
-  issuedByUser: {
+  issuedBy?: string | null
+  issuedByUser?: {
     name: string
     email: string
   } | null
-  issuedAt: string | null
-  issuanceCondition: string | null
-  issuanceNotes: string | null
-  returnCondition: string | null
-  returnNotes: string | null
-  verifiedBy: string | null
-  verifiedByUser: {
+  issuedAt?: string | null
+  issuanceCondition?: string | null
+  issuanceNotes?: string | null
+  returnCondition?: string | null
+  returnNotes?: string | null
+  verifiedBy?: string | null
+  verifiedByUser?: {
     name: string
     email: string
   } | null
-  verifiedAt: string | null
+  verifiedAt?: string | null
   approvals: Array<{
     status: string
     comments: string | null

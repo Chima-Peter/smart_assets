@@ -20,7 +20,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (!hasPermission(session.user.role, "APPROVE_REQUESTS")) {
+    if (!hasPermission(session.user.role, "VERIFY_RETURNS")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

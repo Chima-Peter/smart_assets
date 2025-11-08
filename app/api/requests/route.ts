@@ -41,12 +41,6 @@ export async function GET(req: NextRequest) {
           requestedByUser: {
             select: { name: true, email: true }
           },
-          issuedByUser: {
-            select: { name: true, email: true }
-          },
-          verifiedByUser: {
-            select: { name: true, email: true }
-          },
           approvals: {
             include: {
               approvedByUser: {
@@ -79,12 +73,6 @@ export async function GET(req: NextRequest) {
           }
         },
         requestedByUser: {
-          select: { name: true, email: true }
-        },
-        issuedByUser: {
-          select: { name: true, email: true }
-        },
-        verifiedByUser: {
           select: { name: true, email: true }
         },
         approvals: {

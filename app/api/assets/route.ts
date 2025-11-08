@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { hasPermission } from "@/lib/rbac"
 import { UserRole, AssetType, AssetStatus } from "@/lib/prisma/enums"
 import { z } from "zod"
+import { logActivity } from "@/lib/activity-log"
 
 const assetSchema = z.object({
   name: z.string().min(1),
@@ -22,6 +23,9 @@ const assetSchema = z.object({
   expiryDate: z.string().optional(),
   documentUrls: z.array(z.string().url()).optional(),
   allocatedTo: z.string().optional(),
+  quantity: z.number().int().min(0).optional(),
+  minStockLevel: z.number().int().min(0).optional(),
+  unit: z.string().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -112,15 +116,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Asset code already exists" }, { status: 400 })
     }
 
-    const asset = await prisma.asset.create({
-      data: {
-        ...data,
-        purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
-        expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
-        documentUrls: data.documentUrls ? JSON.stringify(data.documentUrls) : null,
-        registeredBy: session.user.id,
-        status: data.allocatedTo ? AssetStatus.ALLOCATED : AssetStatus.AVAILABLE
-      },
+           const asset = await prisma.asset.create({
+             data: {
+               ...data,
+               purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
+               expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+               documentUrls: data.documentUrls ? JSON.stringify(data.documentUrls) : null,
+               quantity: data.type === AssetType.CONSUMABLE ? (data.quantity ?? null) : null,
+               minStockLevel: data.type === AssetType.CONSUMABLE ? (data.minStockLevel ?? null) : null,
+               unit: data.type === AssetType.CONSUMABLE ? (data.unit ?? null) : null,
+               registeredBy: session.user.id,
+               status: data.allocatedTo ? AssetStatus.ALLOCATED : AssetStatus.AVAILABLE
+             },
       include: {
         registeredByUser: {
           select: { name: true, email: true }
@@ -128,10 +135,19 @@ export async function POST(req: NextRequest) {
         allocatedToUser: {
           select: { name: true, email: true }
         }
-      }
-    })
+             }
+           })
 
-    return NextResponse.json(asset, { status: 201 })
+           // Log activity
+           await logActivity({
+             userId: session.user.id,
+             action: "CREATE",
+             entityType: "ASSET",
+             entityId: asset.id,
+             description: `Registered new asset: ${asset.name} (${asset.assetCode})`,
+           })
+
+           return NextResponse.json(asset, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 })

@@ -25,8 +25,8 @@ export async function POST(
       where: { id },
       include: { 
         asset: true,
-        fromUser: { select: { department: true } },
-        toUser: { select: { department: true } }
+        fromUser: { select: { name: true, email: true, department: true } },
+        toUser: { select: { name: true, email: true, department: true } }
       }
     })
 
@@ -38,14 +38,8 @@ export async function POST(
       return NextResponse.json({ error: "Transfer is not pending" }, { status: 400 })
     }
 
-    // Check permissions
-    const isInDepartmentTransfer = transfer.fromUser.department === transfer.toUser.department && 
-                                   transfer.fromUser.department !== null
-    const canApprove = 
-      (isInDepartmentTransfer && hasPermission(session.user.role, "APPROVE_IN_DEPARTMENT_TRANSFERS")) ||
-      hasPermission(session.user.role, "APPROVE_TRANSFERS")
-
-    if (!canApprove) {
+    // Check permissions - only Faculty Admins can approve inter-departmental transfers
+    if (!hasPermission(session.user.role, "APPROVE_INTER_DEPARTMENTAL_TRANSFERS")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -58,6 +52,11 @@ export async function POST(
         data: {
           status: status as TransferStatus,
           approvedAt: status === "APPROVED" ? new Date() : null,
+        },
+        include: {
+          asset: true,
+          fromUser: { select: { name: true, email: true, department: true } },
+          toUser: { select: { name: true, email: true, department: true } }
         }
       })
 
@@ -71,20 +70,54 @@ export async function POST(
       })
 
       if (status === "APPROVED") {
+        // Generate receipt number
+        const receiptNumber = `TRF-${Date.now()}-${id.substring(0, 6).toUpperCase()}`
+
+        // Update asset ownership and location
         await tx.asset.update({
           where: { id: transfer.assetId },
           data: {
             status: AssetStatus.ALLOCATED,
-            allocatedTo: transfer.toUserId
+            allocatedTo: transfer.toUserId,
+            // Update location to recipient's department if available
+            location: tr.toUser.department || undefined
           }
         })
 
+        // Update transfer with completion and receipt (will work after migration)
+        const updateData: Record<string, unknown> = {
+          completedAt: new Date()
+        }
+        // These fields will be available after migration
+        updateData.receiptNumber = receiptNumber
+        updateData.receiptGeneratedAt = new Date()
+
         await tx.transfer.update({
           where: { id },
-          data: {
-            completedAt: new Date()
-          }
+          data: updateData as Parameters<typeof tx.transfer.update>[0]['data']
         })
+
+        // Create notifications
+        await Promise.all([
+          // Notify recipient
+          tx.notification.create({
+            data: {
+              userId: transfer.toUserId,
+              type: "TRANSFER_APPROVED",
+              title: "Asset Transfer Approved",
+              message: `Transfer of "${tr.asset.name}" from ${tr.fromUser.name} has been approved. Receipt: ${receiptNumber}`,
+            }
+          }),
+          // Notify sender
+          tx.notification.create({
+            data: {
+              userId: transfer.fromUserId,
+              type: "TRANSFER_APPROVED",
+              title: "Asset Transfer Approved",
+              message: `Transfer of "${tr.asset.name}" to ${tr.toUser.name} has been approved. Receipt: ${receiptNumber}`,
+            }
+          })
+        ])
       } else {
         // Reject - revert asset status
         await tx.asset.update({
@@ -93,6 +126,26 @@ export async function POST(
             status: AssetStatus.ALLOCATED,
           }
         })
+
+        // Notify all parties about rejection
+        await Promise.all([
+          tx.notification.create({
+            data: {
+              userId: transfer.toUserId,
+              type: "TRANSFER_REJECTED",
+              title: "Asset Transfer Rejected",
+              message: `Transfer of "${tr.asset.name}" has been rejected.${comments ? ` Reason: ${comments}` : ""}`,
+            }
+          }),
+          tx.notification.create({
+            data: {
+              userId: transfer.fromUserId,
+              type: "TRANSFER_REJECTED",
+              title: "Asset Transfer Rejected",
+              message: `Transfer of "${tr.asset.name}" to ${tr.toUser.name} has been rejected.${comments ? ` Reason: ${comments}` : ""}`,
+            }
+          })
+        ])
       }
 
       return tr

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { hasPermission } from "@/lib/rbac"
 import { RequestStatus, AssetStatus } from "@/lib/prisma/enums"
 import { z } from "zod"
 
@@ -37,7 +38,11 @@ export async function POST(
       return NextResponse.json({ error: "Request not found" }, { status: 404 })
     }
 
+    // Check permissions - only the requester can return assets
     if (request.requestedBy !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+    if (!hasPermission(session.user.role, "RETURN_ASSETS")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

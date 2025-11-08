@@ -12,21 +12,31 @@ interface Transfer {
     name: string
     assetCode: string
     type: string
+    location: string | null
+    room: string | null
   }
   fromUser: {
     name: string
     email: string
+    department: string | null
   }
   toUser: {
     name: string
     email: string
+    department: string | null
   }
   status: TransferStatus
+  transferType?: string | null
   reason: string | null
   requestedAt: string
   approvedAt: string | null
   completedAt: string | null
   notes: string | null
+  receiptNumber?: string | null
+  initiatedByUser?: {
+    name: string
+    email: string
+  }
   approvals: Array<{
     status: string
     comments: string | null
@@ -42,7 +52,6 @@ export default function OfficerTransfersPage() {
   const [transfers, setTransfers] = useState<Transfer[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState<string>("all")
-  const [processing, setProcessing] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   const fetchTransfers = useCallback(async () => {
@@ -65,30 +74,6 @@ export default function OfficerTransfersPage() {
   useEffect(() => {
     fetchTransfers()
   }, [fetchTransfers])
-
-  const handleApprove = async (transferId: string, status: "APPROVED" | "REJECTED", comments?: string) => {
-    setProcessing(transferId)
-    setMessage(null)
-    try {
-      const response = await fetch(`/api/transfers/${transferId}/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, comments }),
-      })
-      const data = await response.json()
-      if (response.ok) {
-        setMessage({ type: "success", text: `Transfer ${status.toLowerCase()} successfully` })
-        await fetchTransfers()
-      } else {
-        setMessage({ type: "error", text: data.error || "Failed to update transfer" })
-      }
-    } catch (error) {
-      console.error("Error updating transfer:", error)
-      setMessage({ type: "error", text: "An error occurred. Please try again." })
-    } finally {
-      setProcessing(null)
-    }
-  }
 
   const getStatusBadge = (status: TransferStatus) => {
     const colors = {
@@ -217,31 +202,41 @@ export default function OfficerTransfersPage() {
                         <div className="text-xs text-gray-700">{transfer.toUser.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(transfer.status)}
+                        <div className="flex flex-col gap-1">
+                          {getStatusBadge(transfer.status)}
+                          {transfer.transferType && (
+                            <span className={`text-xs px-2 py-0.5 rounded ${
+                              transfer.transferType === "INTRA_DEPARTMENTAL" 
+                                ? "bg-blue-100 text-blue-800" 
+                                : "bg-purple-100 text-purple-800"
+                            } font-bold`}>
+                              {transfer.transferType.replace("_", "-")}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">{transfer.reason || "—"}</div>
+                        {transfer.initiatedByUser && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            Initiated by: {transfer.initiatedByUser.name}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                         {formatDate(transfer.requestedAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex flex-col gap-2">
-                          {transfer.status === "PENDING" && (
-                            <div className="flex gap-2">
+                          {transfer.receiptNumber && (
+                            <div className="text-xs">
+                              <div className="font-bold text-gray-900">Receipt:</div>
+                              <div className="font-mono text-blue-700">{transfer.receiptNumber}</div>
                               <button
-                                onClick={() => handleApprove(transfer.id, "APPROVED")}
-                                disabled={processing === transfer.id}
-                                className="px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                                onClick={() => window.open(`/api/transfers/${transfer.id}/receipt`, "_blank")}
+                                className="mt-1 px-2 py-1 bg-blue-700 text-white rounded text-xs hover:bg-blue-800 font-bold"
                               >
-                                {processing === transfer.id ? "Processing..." : "Approve"}
-                              </button>
-                              <button
-                                onClick={() => handleApprove(transfer.id, "REJECTED")}
-                                disabled={processing === transfer.id}
-                                className="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                              >
-                                {processing === transfer.id ? "Processing..." : "Reject"}
+                                View Receipt
                               </button>
                             </div>
                           )}

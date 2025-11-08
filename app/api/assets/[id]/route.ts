@@ -5,6 +5,7 @@ import { hasPermission } from "@/lib/rbac"
 import { z } from "zod"
 import { AssetType, AssetStatus } from "@/lib/prisma/enums"
 import type { AssetUncheckedUpdateInput } from "@/lib/prisma/models/Asset"
+import { logActivity } from "@/lib/activity-log"
 
 const updateAssetSchema = z.object({
   name: z.string().min(1).optional(),
@@ -133,6 +134,15 @@ export async function PATCH(
       }
     })
 
+    // Log activity
+    await logActivity({
+      userId: session.user.id,
+      action: "UPDATE",
+      entityType: "ASSET",
+      entityId: id,
+      description: `Updated asset: ${asset.name}`,
+    })
+
     return NextResponse.json(asset)
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -188,6 +198,15 @@ export async function DELETE(
         error: "Cannot delete asset with pending requests" 
       }, { status: 400 })
     }
+
+    // Log activity before deletion
+    await logActivity({
+      userId: session.user.id,
+      action: "DELETE",
+      entityType: "ASSET",
+      entityId: id,
+      description: `Deleted asset: ${asset.name} (${asset.assetCode})`,
+    })
 
     // Delete asset
     await prisma.asset.delete({

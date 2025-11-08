@@ -56,35 +56,39 @@ enum TransferStatus {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String
-  name          String
-  role          UserRole
-  department    String?
-  employeeId    String?   @unique
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  name       String
+  role       UserRole
+  department String?
+  employeeId String?  @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  registeredAssets Asset[] @relation("RegisteredAssets")
-  allocatedAssets Asset[] @relation("AllocatedAssets")
-  requests      Request[]
-  issuedRequests Request[] @relation("IssuedRequests")
-  verifiedReturns Request[] @relation("VerifiedReturns")
-  transfers    Transfer[] @relation("TransferFrom")
-  receivedTransfers Transfer[] @relation("TransferTo")
-  approvals     Approval[]
-  notifications Notification[]
+  registeredAssets   Asset[]        @relation("RegisteredAssets")
+  allocatedAssets    Asset[]        @relation("AllocatedAssets")
+  requests           Request[]
+  issuedRequests     Request[]      @relation("IssuedRequests")
+  verifiedReturns    Request[]      @relation("VerifiedReturns")
+  transfers          Transfer[]     @relation("TransferFrom")
+  receivedTransfers  Transfer[]     @relation("TransferTo")
+  initiatedTransfers Transfer[]     @relation("InitiatedTransfers")
+  approvals          Approval[]
+  notifications      Notification[]
+  performedMaintenance Maintenance[] @relation("PerformedMaintenance")
+  updatedConfigs     SystemConfig[] @relation("UpdatedConfigs")
+  activityLogs       ActivityLog[]
 }
 
 model Asset {
-  id            String      @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String
   description   String?
-  assetCode     String      @unique
+  assetCode     String         @unique
   type          AssetType
-  status        AssetStatus @default(AVAILABLE)
+  status        AssetStatus    @default(AVAILABLE)
   category      String?
   assetCategory AssetCategory?
   location      String?
@@ -95,95 +99,158 @@ model Asset {
   manufacturer  String?
   model         String?
   expiryDate    DateTime?
-  documentUrls  String?     // JSON array of document URLs
-  isArchived    Boolean     @default(false)
+  documentUrls  String? // JSON array of document URLs
+  isArchived    Boolean        @default(false)
   archivedAt    DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  // Consumable inventory tracking
+  quantity      Int?        // Current stock quantity (for consumables)
+  minStockLevel Int?        // Minimum stock level before reorder alert
+  unit          String?     // Unit of measurement (e.g., "boxes", "units", "liters")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   // Relations
-  registeredBy  String
-  registeredByUser User     @relation("RegisteredAssets", fields: [registeredBy], references: [id])
-  allocatedTo  String?
-  allocatedToUser User?     @relation("AllocatedAssets", fields: [allocatedTo], references: [id])
-  requests     Request[]
-  transfers    Transfer[]
+  registeredBy     String
+  registeredByUser User       @relation("RegisteredAssets", fields: [registeredBy], references: [id])
+  allocatedTo      String?
+  allocatedToUser  User?      @relation("AllocatedAssets", fields: [allocatedTo], references: [id])
+  requests         Request[]
+  transfers        Transfer[]
+  maintenance      Maintenance[]
 }
 
 model Request {
-  id            String        @id @default(cuid())
-  assetId       String
-  asset         Asset         @relation(fields: [assetId], references: [id])
-  requestedBy   String
-  requestedByUser User        @relation(fields: [requestedBy], references: [id])
-  status        RequestStatus @default(PENDING)
-  purpose       String?
-  requestedAt   DateTime      @default(now())
-  approvedAt    DateTime?
-  fulfilledAt   DateTime?
-  returnedAt    DateTime?
-  notes         String?
+  id                String        @id @default(cuid())
+  assetId           String
+  asset             Asset         @relation(fields: [assetId], references: [id])
+  requestedBy       String
+  requestedByUser   User          @relation(fields: [requestedBy], references: [id])
+  status            RequestStatus @default(PENDING)
+  purpose           String?
+  requestedAt       DateTime      @default(now())
+  approvedAt        DateTime?
+  fulfilledAt       DateTime?
+  returnedAt        DateTime?
+  notes             String?
   // Issuance tracking
-  issuedBy      String?
-  issuedByUser  User?         @relation("IssuedRequests", fields: [issuedBy], references: [id])
-  issuedAt      DateTime?
-  issuanceCondition String?   // e.g., "FUNCTIONAL", "DAMAGED", "GOOD"
-  issuanceNotes String?
+  issuedBy          String?
+  issuedByUser      User?         @relation("IssuedRequests", fields: [issuedBy], references: [id])
+  issuedAt          DateTime?
+  issuanceCondition String? // e.g., "FUNCTIONAL", "DAMAGED", "GOOD"
+  issuanceNotes     String?
   // Return tracking
-  returnCondition String?     // e.g., "FUNCTIONAL", "DAMAGED", "LOST", "NEEDS_REPAIR"
-  returnNotes    String?
-  verifiedBy     String?
-  verifiedByUser User?        @relation("VerifiedReturns", fields: [verifiedBy], references: [id])
-  verifiedAt     DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  returnCondition   String? // e.g., "FUNCTIONAL", "DAMAGED", "LOST", "NEEDS_REPAIR"
+  returnNotes       String?
+  verifiedBy        String?
+  verifiedByUser    User?         @relation("VerifiedReturns", fields: [verifiedBy], references: [id])
+  verifiedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   approvals     Approval[]
+  notifications Notification[]
 }
 
 model Notification {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  type          String    // "REQUEST_APPROVED", "REQUEST_REJECTED", "REQUEST_FULFILLED", "ASSET_RETURNED"
-  title         String
-  message       String
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  type             String // "REQUEST_APPROVED", "REQUEST_REJECTED", "REQUEST_FULFILLED", "ASSET_RETURNED"
+  title            String
+  message          String
   relatedRequestId String?
-  relatedRequest Request? @relation(fields: [relatedRequestId], references: [id])
-  read          Boolean   @default(false)
-  createdAt     DateTime  @default(now())
+  relatedRequest   Request? @relation(fields: [relatedRequestId], references: [id])
+  relatedAssetId   String?
+  relatedMaintenanceId String?
+  read             Boolean  @default(false)
+  emailSent        Boolean  @default(false)
+  smsSent          Boolean  @default(false)
+  createdAt        DateTime @default(now())
 }
 
 model Transfer {
-  id            String          @id @default(cuid())
-  assetId       String
-  asset         Asset           @relation(fields: [assetId], references: [id])
-  fromUserId    String
-  fromUser      User            @relation("TransferFrom", fields: [fromUserId], references: [id])
-  toUserId      String
-  toUser        User            @relation("TransferTo", fields: [toUserId], references: [id])
-  status        TransferStatus  @default(PENDING)
-  reason        String?
-  requestedAt   DateTime        @default(now())
-  approvedAt    DateTime?
-  completedAt   DateTime?
-  notes         String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id                 String         @id @default(cuid())
+  assetId            String
+  asset              Asset          @relation(fields: [assetId], references: [id])
+  fromUserId         String
+  fromUser           User           @relation("TransferFrom", fields: [fromUserId], references: [id])
+  toUserId           String
+  toUser             User           @relation("TransferTo", fields: [toUserId], references: [id])
+  initiatedBy        String // Officer who initiated the transfer
+  initiatedByUser    User           @relation("InitiatedTransfers", fields: [initiatedBy], references: [id])
+  status             TransferStatus @default(PENDING)
+  transferType       String? // "INTER_DEPARTMENTAL" or "INTRA_DEPARTMENTAL"
+  reason             String?
+  requestedAt        DateTime       @default(now())
+  approvedAt         DateTime?
+  completedAt        DateTime?
+  notes              String?
+  // Transfer receipt/log
+  receiptNumber      String?        @unique
+  receiptGeneratedAt DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
-  approvals     Approval[]
+  approvals Approval[]
 }
 
 model Approval {
+  id             String    @id @default(cuid())
+  requestId      String?
+  request        Request?  @relation(fields: [requestId], references: [id])
+  transferId     String?
+  transfer       Transfer? @relation(fields: [transferId], references: [id])
+  approvedBy     String
+  approvedByUser User      @relation(fields: [approvedBy], references: [id])
+  status         String // APPROVED or REJECTED
+  comments       String?
+  approvedAt     DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+}
+
+model Maintenance {
+  id                String    @id @default(cuid())
+  assetId           String
+  asset             Asset     @relation(fields: [assetId], references: [id])
+  type              String    // "PREVENTIVE", "REPAIR", "CALIBRATION", "INSPECTION"
+  scheduledDate     DateTime?
+  completedDate     DateTime?
+  serviceType       String?   // Description of service
+  cost              Float?
+  vendor            String?
+  technician        String?
+  notes             String?
+  status            String    @default("SCHEDULED") // "SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"
+  nextMaintenanceDate DateTime? // For recurring maintenance
+  reminderSent      Boolean   @default(false)
+  performedBy       String?
+  performedByUser   User?     @relation("PerformedMaintenance", fields: [performedBy], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model ActivityLog {
   id            String    @id @default(cuid())
-  requestId     String?
-  request       Request?  @relation(fields: [requestId], references: [id])
-  transferId    String?
-  transfer      Transfer? @relation(fields: [transferId], references: [id])
-  approvedBy    String
-  approvedByUser User     @relation(fields: [approvedBy], references: [id])
-  status        String    // APPROVED or REJECTED
-  comments      String?
-  approvedAt    DateTime  @default(now())
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id])
+  action        String    // "CREATE", "UPDATE", "DELETE", "APPROVE", "REJECT", "TRANSFER", "LOGIN", "LOGOUT"
+  entityType    String    // "ASSET", "REQUEST", "TRANSFER", "USER", "MAINTENANCE", etc.
+  entityId      String?
+  description   String
+  metadata      String?   // JSON string for additional details
+  ipAddress     String?
+  userAgent     String?
   createdAt     DateTime  @default(now())
+}
+
+model SystemConfig {
+  id            String    @id @default(cuid())
+  key           String    @unique
+  value         String
+  description   String?
+  category      String?   // "NOTIFICATION", "MAINTENANCE", "INVENTORY", "GENERAL"
+  updatedBy     String?
+  updatedByUser User?     @relation("UpdatedConfigs", fields: [updatedBy], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }

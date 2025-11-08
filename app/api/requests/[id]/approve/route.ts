@@ -71,9 +71,6 @@ export async function POST(
           requestedByUser: {
             select: { name: true, email: true }
           },
-          issuedByUser: {
-            select: { name: true, email: true }
-          },
           asset: true
         }
       })
