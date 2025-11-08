@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
+import LoadingSpinner from "@/components/LoadingSpinner"
 
 interface Asset {
   status: string
@@ -16,8 +17,10 @@ interface DashboardStats {
 
 export default function OfficerDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     Promise.all([
       fetch("/api/assets").then((res) => res.json()),
       fetch("/api/requests?status=PENDING").then((res) => res.json()),
@@ -31,6 +34,8 @@ export default function OfficerDashboard() {
       }
     }).catch((error) => {
       console.error("Error fetching dashboard stats:", error)
+    }).finally(() => {
+      setLoading(false)
     })
   }, [])
 
@@ -39,7 +44,11 @@ export default function OfficerDashboard() {
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-900">Departmental Officer Dashboard</h1>
         
-        {stats && (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <LoadingSpinner size="lg" text="Loading dashboard..." />
+          </div>
+        ) : stats && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div className="bg-white p-6 rounded-lg shadow border-2 border-gray-800">
               <h3 className="text-lg font-bold text-gray-900 mb-2">Total Assets</h3>

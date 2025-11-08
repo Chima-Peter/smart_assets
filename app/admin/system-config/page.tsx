@@ -25,6 +25,7 @@ export default function AdminSystemConfigPage() {
   const [editValue, setEditValue] = useState("")
   const [filterCategory, setFilterCategory] = useState("")
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [processing, setProcessing] = useState<string | null>(null)
 
   const fetchConfigs = async () => {
     setLoading(true)
@@ -54,10 +55,12 @@ export default function AdminSystemConfigPage() {
   }
 
   const handleSave = async (key: string) => {
-    try {
-      const config = configs.find((c) => c.key === key)
-      if (!config) return
+    const config = configs.find((c) => c.key === key)
+    if (!config) return
 
+    setProcessing(key)
+    setMessage(null)
+    try {
       const res = await fetch("/api/system-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -76,6 +79,8 @@ export default function AdminSystemConfigPage() {
     } catch (error) {
       console.error("Error updating config:", error)
       setMessage({ type: "error", text: "Failed to update configuration" })
+    } finally {
+      setProcessing(null)
     }
   }
 
@@ -181,9 +186,17 @@ export default function AdminSystemConfigPage() {
                         <div className="flex flex-col sm:flex-row gap-2">
                           <button
                             onClick={() => handleSave(config.key)}
-                            className="flex-1 sm:flex-initial px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 font-bold transition-colors"
+                            disabled={processing === config.key}
+                            className="flex-1 sm:flex-initial px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-pulse-on-submit"
                           >
-                            Save
+                            {processing === config.key ? (
+                              <>
+                                <LoadingSpinner size="sm" />
+                                <span>Saving...</span>
+                              </>
+                            ) : (
+                              "Save"
+                            )}
                           </button>
                           <button
                             onClick={handleCancel}

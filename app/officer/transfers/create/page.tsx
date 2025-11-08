@@ -221,9 +221,16 @@ export default function CreateTransferPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-pulse-on-submit"
                 >
-                  {submitting ? "Creating Transfer..." : "Initiate Transfer"}
+                  {submitting ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      <span>Creating Transfer...</span>
+                    </>
+                  ) : (
+                    "Initiate Transfer"
+                  )}
                 </button>
                 <Link
                   href="/officer/transfers"

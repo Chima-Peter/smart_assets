@@ -107,7 +107,7 @@ export default function Sidebar({ role, userName, onClose }: SidebarProps) {
         <p className="text-gray-200 text-sm font-medium truncate">{userName}</p>
         <p className="text-gray-300 text-xs mt-1 capitalize font-medium">{role.toLowerCase().replace("_", " ")}</p>
       </div>
-      <nav className="flex-1 overflow-y-auto">
+      <nav className="flex-1 overflow-y-auto scrollbar-hide">
         {links.map((link) => (
           <Link
             key={link.href}

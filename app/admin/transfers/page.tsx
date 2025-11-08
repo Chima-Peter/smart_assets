@@ -233,16 +233,30 @@ export default function AdminTransfersPage() {
                               <button
                                 onClick={() => handleApprove(transfer.id, "APPROVED")}
                                 disabled={processing === transfer.id}
-                                className="px-3 py-1 bg-emerald-700 text-white rounded hover:bg-emerald-800 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 py-1 bg-emerald-700 text-white rounded hover:bg-emerald-800 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1 animate-pulse-on-submit"
                               >
-                                {processing === transfer.id ? "Processing..." : "Approve"}
+                                {processing === transfer.id ? (
+                                  <>
+                                    <LoadingSpinner size="sm" />
+                                    <span>Processing...</span>
+                                  </>
+                                ) : (
+                                  "Approve"
+                                )}
                               </button>
                               <button
                                 onClick={() => handleApprove(transfer.id, "REJECTED")}
                                 disabled={processing === transfer.id}
-                                className="px-3 py-1 bg-red-700 text-white rounded hover:bg-red-800 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 py-1 bg-red-700 text-white rounded hover:bg-red-800 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1 animate-pulse-on-submit"
                               >
-                                {processing === transfer.id ? "Processing..." : "Reject"}
+                                {processing === transfer.id ? (
+                                  <>
+                                    <LoadingSpinner size="sm" />
+                                    <span>Processing...</span>
+                                  </>
+                                ) : (
+                                  "Reject"
+                                )}
                               </button>
                             </div>
                           )}

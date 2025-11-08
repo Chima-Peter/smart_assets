@@ -355,9 +355,16 @@ export default function LecturerMyRequestsPage() {
                   <button
                     onClick={handleReturn}
                     disabled={processing === returnModal.requestId}
-                    className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 animate-pulse-on-submit"
                   >
-                    {processing === returnModal.requestId ? "Processing..." : "Return Asset"}
+                    {processing === returnModal.requestId ? (
+                      <>
+                        <LoadingSpinner size="sm" />
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      "Return Asset"
+                    )}
                   </button>
                   <button
                     onClick={closeReturnModal}

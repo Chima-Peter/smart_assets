@@ -55,10 +55,13 @@ export default function AdminUsersPage() {
     fetchUsers()
   }, [])
 
+  const [submitting, setSubmitting] = useState(false)
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setSuccess("")
+    setSubmitting(true)
 
     try {
       const response = await fetch("/api/users", {
@@ -75,6 +78,7 @@ export default function AdminUsersPage() {
 
       if (!response.ok) {
         setError(data.error || "Failed to create user")
+        setSubmitting(false)
         return
       }
 
@@ -91,6 +95,8 @@ export default function AdminUsersPage() {
       fetchUsers()
     } catch (error) {
       setError("An error occurred. Please try again.")
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -210,9 +216,17 @@ export default function AdminUsersPage() {
               </div>
               <button
                 type="submit"
-                className="px-6 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg font-bold"
+                disabled={submitting}
+                className="px-6 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 animate-pulse-on-submit"
               >
-                Create User
+                {submitting ? (
+                  <>
+                    <LoadingSpinner size="sm" />
+                    <span>Creating...</span>
+                  </>
+                ) : (
+                  "Create User"
+                )}
               </button>
             </form>
           </div>

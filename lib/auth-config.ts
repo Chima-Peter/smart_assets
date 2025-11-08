@@ -20,9 +20,10 @@ export const authOptions: NextAuthConfig = {
         }
 
         // Lazy import Prisma to avoid Edge Runtime issues in middleware
-        // Using Function constructor to prevent static analysis by bundler
-        const getPrisma = new Function('return import("@/lib/prisma")')
-        const prismaModule = await getPrisma()
+        // Using Function constructor with relative path to prevent static analysis
+        // This prevents the bundler from analyzing the import chain
+        const prismaImport = new Function('p', 'return import(p)')
+        const prismaModule = await prismaImport('./prisma')
         const { prisma } = prismaModule
         const bcrypt = await import("bcryptjs")
 
