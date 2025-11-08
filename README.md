@@ -372,6 +372,18 @@ npm run lint
 
 ## 🚢 Production Deployment
 
+### Quick Deploy to Vercel
+
+For detailed Vercel deployment instructions, see **[DEPLOYMENT.md](./DEPLOYMENT.md)**
+
+**Quick Steps:**
+1. Push your code to GitHub/GitLab/Bitbucket
+2. Import project in [Vercel Dashboard](https://vercel.com/new)
+3. Configure environment variables (see DEPLOYMENT.md)
+4. Deploy!
+
+### Manual Deployment
+
 1. **Update environment variables:**
    - Change `DATABASE_URL` to a production database (PostgreSQL recommended)
    - Update `NEXTAUTH_SECRET` to a secure random string
@@ -397,6 +409,16 @@ npm start
 - Set up monitoring and logging
 - Configure rate limiting
 - Regular database backups
+
+### Authentication Credentials
+
+For default test account credentials, see **[AUTH_CREDENTIALS.md](./AUTH_CREDENTIALS.md)**
+
+**Quick Reference:**
+- **Faculty Admin**: `admin@university.edu` / `admin123`
+- **Departmental Officer**: `officer@university.edu` / `officer123`
+- **Lecturer**: `lecturer@university.edu` / `lecturer123`
+- **Course Rep**: `rep@university.edu` / `rep123`
 
 ## 🔒 Security Notes
 
