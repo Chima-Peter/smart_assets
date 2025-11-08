@@ -103,9 +103,9 @@ export default function AdminUsersPage() {
   return (
     <DashboardLayout>
       <div>
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User Management</h1>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={() => setShowCreateForm(!showCreateForm)}
               className="px-4 py-2 bg-gray-800 text-white hover:bg-gray-900 rounded-lg transition-colors font-bold"

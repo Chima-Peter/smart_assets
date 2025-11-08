@@ -136,12 +136,12 @@ export default function LecturerMyRequestsPage() {
   return (
     <DashboardLayout>
       <div>
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Requests</h1>
-          <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Requests</h1>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <a
               href="/lecturer/request"
-              className="px-4 py-2 bg-blue-700 text-white hover:bg-blue-800 rounded-lg transition-colors font-bold shadow-lg"
+              className="w-full sm:w-auto px-4 py-2 bg-blue-700 text-white hover:bg-blue-800 rounded-lg transition-colors font-bold shadow-lg text-center"
             >
               + New Request
             </a>
@@ -310,8 +310,8 @@ export default function LecturerMyRequestsPage() {
 
         {/* Return Modal */}
         {returnModal.open && returnModal.requestId && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4 border-2 border-gray-800">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 max-w-md w-full border-2 border-gray-800 my-auto">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Return Asset</h3>
               <div className="space-y-4">
                 <div>
@@ -343,7 +343,7 @@ export default function LecturerMyRequestsPage() {
                     placeholder="Any notes about the asset condition..."
                   />
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={handleReturn}
                     disabled={processing === returnModal.requestId}

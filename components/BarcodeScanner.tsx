@@ -73,21 +73,21 @@ export default function BarcodeScanner({ onScan, onError, onClose }: BarcodeScan
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
         {/* Header - Always visible */}
-        <div className="flex items-center justify-between p-5 border-b-2 border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex items-center justify-between p-3 sm:p-5 border-b-2 border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-white">Scan Barcode</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-white">Scan Barcode</h2>
           </div>
           <button
             onClick={handleClose}
-            className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-xl transition-colors flex items-center justify-center"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-lg sm:text-xl transition-colors flex items-center justify-center"
             aria-label="Close scanner"
           >
             ×
@@ -95,7 +95,7 @@ export default function BarcodeScanner({ onScan, onError, onClose }: BarcodeScan
         </div>
 
         {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5">
           {error && (
             <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-600 rounded-r-lg">
               <div className="flex items-start gap-3">
@@ -138,10 +138,10 @@ export default function BarcodeScanner({ onScan, onError, onClose }: BarcodeScan
         </div>
 
         {/* Footer - Always visible */}
-        <div className="p-5 border-t-2 border-gray-200 bg-gray-50">
+        <div className="p-3 sm:p-5 border-t-2 border-gray-200 bg-gray-50">
           <button
             onClick={handleClose}
-            className="w-full px-6 py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-900 font-bold text-base transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+            className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-gray-800 text-white rounded-lg sm:rounded-xl hover:bg-gray-900 font-bold text-sm sm:text-base transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

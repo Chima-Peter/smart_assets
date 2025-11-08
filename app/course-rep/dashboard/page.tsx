@@ -32,14 +32,14 @@ export default function CourseRepDashboard() {
   return (
     <DashboardLayout>
       <div>
-        <h1 className="text-3xl font-bold mb-8 text-gray-900">Course Representative Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-900">Course Representative Dashboard</h1>
         
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <LoadingSpinner size="lg" text="Loading dashboard..." />
           </div>
         ) : stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div className="bg-white p-6 rounded-lg shadow border-2 border-gray-800">
               <h3 className="text-lg font-bold text-gray-900 mb-2">Available Consumables</h3>
               <p className="text-3xl font-bold text-gray-900">{stats.availableConsumables || 0}</p>
@@ -52,9 +52,9 @@ export default function CourseRepDashboard() {
           </div>
         )}
 
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-300">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">View Available Items</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-300">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">View Available Items</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <a
               href="/course-rep/consumables"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"

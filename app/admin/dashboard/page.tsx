@@ -32,10 +32,10 @@ export default function AdminDashboard() {
   return (
     <DashboardLayout>
       <div>
-        <h1 className="text-3xl font-bold mb-8 text-gray-900">Faculty Admin Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-900">Faculty Admin Dashboard</h1>
         
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div className="bg-white p-6 rounded-lg shadow border-2 border-gray-800">
               <h3 className="text-lg font-bold text-gray-900 mb-2">Total Assets</h3>
               <p className="text-3xl font-bold text-gray-900">{stats.assets?.total || 0}</p>
@@ -62,9 +62,9 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-300">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-300">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <a
               href="/admin/assets"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"

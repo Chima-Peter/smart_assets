@@ -103,11 +103,11 @@ export default function OfficerTransfersPage() {
   return (
     <DashboardLayout>
       <div>
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Manage Transfers</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Manage Transfers</h1>
           <a
             href="/officer/dashboard"
-            className="px-4 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-bold shadow-lg"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-bold shadow-lg text-center sm:text-left"
           >
             ← Back to Dashboard
           </a>
@@ -148,7 +148,7 @@ export default function OfficerTransfersPage() {
           </div>
         </div>
 
-        {/* Transfers Table */}
+        {/* Transfers - Desktop Table / Mobile Cards */}
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <LoadingSpinner size="lg" text="Loading transfers..." />
@@ -158,114 +158,203 @@ export default function OfficerTransfersPage() {
             <p className="text-gray-900 font-medium">No transfers found.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow border border-gray-300 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-800">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                      Asset
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                      From
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                      To
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                      Reason
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                      Requested At
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-300">
-                  {transfers.map((transfer) => (
-                    <tr key={transfer.id} className="hover:bg-gray-100">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-gray-900">{transfer.asset.name}</div>
-                        <div className="text-xs font-mono text-gray-700">{transfer.asset.assetCode}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{transfer.fromUser.name}</div>
-                        <div className="text-xs text-gray-700">{transfer.fromUser.email}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{transfer.toUser.name}</div>
-                        <div className="text-xs text-gray-700">{transfer.toUser.email}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col gap-1">
-                          {getStatusBadge(transfer.status)}
-                          {transfer.transferType && (
-                            <span className={`text-xs px-2 py-0.5 rounded ${
-                              transfer.transferType === "INTRA_DEPARTMENTAL" 
-                                ? "bg-blue-100 text-blue-800" 
-                                : "bg-purple-100 text-purple-800"
-                            } font-bold`}>
-                              {transfer.transferType.replace("_", "-")}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{transfer.reason || "—"}</div>
-                        {transfer.initiatedByUser && (
-                          <div className="text-xs text-gray-600 mt-1">
-                            Initiated by: {transfer.initiatedByUser.name}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                        {formatDate(transfer.requestedAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex flex-col gap-2">
-                          {transfer.receiptNumber && (
-                            <div className="text-xs">
-                              <div className="font-bold text-gray-900">Receipt:</div>
-                              <div className="font-mono text-blue-700">{transfer.receiptNumber}</div>
-                              <button
-                                onClick={() => window.open(`/api/transfers/${transfer.id}/receipt`, "_blank")}
-                                className="mt-1 px-2 py-1 bg-blue-700 text-white rounded text-xs hover:bg-blue-800 font-bold"
-                              >
-                                View Receipt
-                              </button>
-                            </div>
-                          )}
-                          {transfer.approvals.length > 0 && (
-                            <div className="space-y-1">
-                              {transfer.approvals.map((approval, idx) => (
-                                <div key={idx} className="text-xs">
-                                  <span className={`font-bold ${approval.status === "APPROVED" ? "text-emerald-700" : "text-red-700"}`}>
-                                    {approval.status}
-                                  </span>
-                                  {" by "}
-                                  <span className="text-gray-900 font-medium">{approval.approvedByUser.name}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </td>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden lg:block bg-white rounded-lg shadow border border-gray-300 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-300">
+                  <thead className="bg-gray-800">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                        Asset
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                        From
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                        To
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                        Reason
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                        Requested At
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-300">
+                    {transfers.map((transfer) => (
+                      <tr key={transfer.id} className="hover:bg-gray-100">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-bold text-gray-900">{transfer.asset.name}</div>
+                          <div className="text-xs font-mono text-gray-700">{transfer.asset.assetCode}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{transfer.fromUser.name}</div>
+                          <div className="text-xs text-gray-700">{transfer.fromUser.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{transfer.toUser.name}</div>
+                          <div className="text-xs text-gray-700">{transfer.toUser.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col gap-1">
+                            {getStatusBadge(transfer.status)}
+                            {transfer.transferType && (
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                transfer.transferType === "INTRA_DEPARTMENTAL" 
+                                  ? "bg-blue-100 text-blue-800" 
+                                  : "bg-purple-100 text-purple-800"
+                              } font-bold`}>
+                                {transfer.transferType.replace("_", "-")}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">{transfer.reason || "—"}</div>
+                          {transfer.initiatedByUser && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              Initiated by: {transfer.initiatedByUser.name}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                          {formatDate(transfer.requestedAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <div className="flex flex-col gap-2">
+                            {transfer.receiptNumber && (
+                              <div className="text-xs">
+                                <div className="font-bold text-gray-900">Receipt:</div>
+                                <div className="font-mono text-blue-700">{transfer.receiptNumber}</div>
+                                <button
+                                  onClick={() => window.open(`/api/transfers/${transfer.id}/receipt`, "_blank")}
+                                  className="mt-1 px-2 py-1 bg-blue-700 text-white rounded text-xs hover:bg-blue-800 font-bold"
+                                >
+                                  View Receipt
+                                </button>
+                              </div>
+                            )}
+                            {transfer.approvals.length > 0 && (
+                              <div className="space-y-1">
+                                {transfer.approvals.map((approval, idx) => (
+                                  <div key={idx} className="text-xs">
+                                    <span className={`font-bold ${approval.status === "APPROVED" ? "text-emerald-700" : "text-red-700"}`}>
+                                      {approval.status}
+                                    </span>
+                                    {" by "}
+                                    <span className="text-gray-900 font-medium">{approval.approvedByUser.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="bg-gray-100 px-6 py-3 border-t-2 border-gray-300">
+                <p className="text-sm font-bold text-gray-900">
+                  Showing <span className="text-gray-900">{transfers.length}</span> transfer{transfers.length !== 1 ? "s" : ""}
+                </p>
+              </div>
             </div>
-            <div className="bg-gray-100 px-6 py-3 border-t-2 border-gray-300">
-              <p className="text-sm font-bold text-gray-900">
-                Showing <span className="text-gray-900">{transfers.length}</span> transfer{transfers.length !== 1 ? "s" : ""}
-              </p>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4">
+              {transfers.map((transfer) => (
+                <div key={transfer.id} className="bg-white rounded-lg shadow border border-gray-300 p-4">
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-sm font-bold text-gray-900">{transfer.asset.name}</div>
+                      <div className="text-xs font-mono text-gray-700">{transfer.asset.assetCode}</div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <div className="text-xs text-gray-600 font-medium">From:</div>
+                        <div className="font-medium text-gray-900">{transfer.fromUser.name}</div>
+                        <div className="text-xs text-gray-700">{transfer.fromUser.email}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-600 font-medium">To:</div>
+                        <div className="font-medium text-gray-900">{transfer.toUser.name}</div>
+                        <div className="text-xs text-gray-700">{transfer.toUser.email}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {getStatusBadge(transfer.status)}
+                      {transfer.transferType && (
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          transfer.transferType === "INTRA_DEPARTMENTAL" 
+                            ? "bg-blue-100 text-blue-800" 
+                            : "bg-purple-100 text-purple-800"
+                        } font-bold`}>
+                          {transfer.transferType.replace("_", "-")}
+                        </span>
+                      )}
+                    </div>
+
+                    {transfer.reason && (
+                      <div>
+                        <div className="text-xs text-gray-600 font-medium">Reason:</div>
+                        <div className="text-sm text-gray-900">{transfer.reason}</div>
+                      </div>
+                    )}
+
+                    {transfer.initiatedByUser && (
+                      <div className="text-xs text-gray-600">
+                        Initiated by: {transfer.initiatedByUser.name}
+                      </div>
+                    )}
+
+                    <div>
+                      <div className="text-xs text-gray-600 font-medium">Requested:</div>
+                      <div className="text-sm text-gray-900">{formatDate(transfer.requestedAt)}</div>
+                    </div>
+
+                    {transfer.receiptNumber && (
+                      <div className="pt-2 border-t border-gray-200">
+                        <div className="text-xs font-bold text-gray-900 mb-1">Receipt:</div>
+                        <div className="font-mono text-blue-700 text-sm mb-2">{transfer.receiptNumber}</div>
+                        <button
+                          onClick={() => window.open(`/api/transfers/${transfer.id}/receipt`, "_blank")}
+                          className="w-full px-3 py-2 bg-blue-700 text-white rounded text-sm hover:bg-blue-800 font-bold"
+                        >
+                          View Receipt
+                        </button>
+                      </div>
+                    )}
+
+                    {transfer.approvals.length > 0 && (
+                      <div className="pt-2 border-t border-gray-200">
+                        <div className="text-xs font-bold text-gray-900 mb-1">Approvals:</div>
+                        {transfer.approvals.map((approval, idx) => (
+                          <div key={idx} className="text-xs mb-1">
+                            <span className={`font-bold ${approval.status === "APPROVED" ? "text-emerald-700" : "text-red-700"}`}>
+                              {approval.status}
+                            </span>
+                            {" by "}
+                            <span className="text-gray-900 font-medium">{approval.approvedByUser.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          </>
         )}
       </div>
     </DashboardLayout>

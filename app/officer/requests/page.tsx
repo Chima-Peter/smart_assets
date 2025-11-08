@@ -222,11 +222,11 @@ export default function OfficerRequestsPage() {
   return (
     <DashboardLayout>
       <div>
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Approve Requests</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Approve Requests</h1>
           <a
             href="/officer/dashboard"
-            className="px-4 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-bold shadow-lg"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-bold shadow-lg text-center sm:text-left"
           >
             ← Back to Dashboard
           </a>
@@ -407,8 +407,8 @@ export default function OfficerRequestsPage() {
 
         {/* Approval Modal */}
         {approvalModal.open && approvalModal.requestId && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4 border-2 border-gray-800">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 max-w-md w-full border-2 border-gray-800 my-auto">
               <h3 className="text-xl font-bold text-gray-900 mb-4">
                 {approvalModal.status === "APPROVED" ? "Approve Request" : "Reject Request"}
               </h3>
@@ -457,7 +457,7 @@ export default function OfficerRequestsPage() {
                     placeholder={approvalModal.status === "APPROVED" ? "Optional comments..." : "Please provide a reason for rejection..."}
                   />
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={handleApprove}
                     disabled={processing === approvalModal.requestId || (approvalModal.status === "REJECTED" && !approvalData.comments)}
@@ -480,8 +480,8 @@ export default function OfficerRequestsPage() {
 
         {/* Verify Return Modal */}
         {verifyModal.open && verifyModal.requestId && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4 border-2 border-gray-800">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 max-w-md w-full border-2 border-gray-800 my-auto">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Verify Return</h3>
               <div className="space-y-4">
                 <div>
@@ -513,7 +513,7 @@ export default function OfficerRequestsPage() {
                     placeholder="Any notes about the verification..."
                   />
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={handleVerifyReturn}
                     disabled={processing === verifyModal.requestId}

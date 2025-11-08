@@ -213,7 +213,7 @@ export default function RegisterAssetPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Form */}
           <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-gray-200">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-200">
@@ -293,11 +293,11 @@ export default function RegisterAssetPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">
-                    Type *
-                  </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                       <div>
+                         <label className="block text-sm font-bold text-gray-900 mb-2">
+                           Type *
+                         </label>
                   <select
                     required
                     value={formData.type}
@@ -347,7 +347,7 @@ export default function RegisterAssetPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
                     Location/Department
@@ -375,7 +375,7 @@ export default function RegisterAssetPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
                     Serial Number
@@ -401,7 +401,7 @@ export default function RegisterAssetPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
                     Manufacturer
@@ -427,7 +427,7 @@ export default function RegisterAssetPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
                     Purchase Price
@@ -455,7 +455,7 @@ export default function RegisterAssetPage() {
               </div>
 
               {formData.type === AssetType.CONSUMABLE && (
-                <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-900 mb-2">
                       Quantity *
