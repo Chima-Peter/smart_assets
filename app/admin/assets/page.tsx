@@ -38,6 +38,7 @@ export default function AdminAssetsPage() {
   const [filterType, setFilterType] = useState<string>("all")
   const [showScanner, setShowScanner] = useState(false)
   const [searchCode, setSearchCode] = useState("")
+  const [barcodeScanningEnabled, setBarcodeScanningEnabled] = useState(true)
 
   const fetchAssets = useCallback(async () => {
     setLoading(true)
@@ -55,6 +56,19 @@ export default function AdminAssetsPage() {
       setLoading(false)
     }
   }, [filterStatus, filterType])
+
+  useEffect(() => {
+    // Check if barcode scanning is enabled
+    fetch("/api/system-config/check?key=feature.barcode.scanning&type=boolean")
+      .then((res) => res.json())
+      .then((data) => {
+        setBarcodeScanningEnabled(data.value === true || data.value === "true")
+      })
+      .catch(() => {
+        // Default to enabled if check fails
+        setBarcodeScanningEnabled(true)
+      })
+  }, [])
 
   useEffect(() => {
     fetchAssets()
@@ -115,12 +129,14 @@ export default function AdminAssetsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">All Assets</h1>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-            <button
-              onClick={() => setShowScanner(true)}
-              className="w-full sm:w-auto px-4 py-2 bg-blue-700 text-white hover:bg-blue-800 rounded-lg transition-colors font-bold text-center"
-            >
-              📷 Scan Barcode
-            </button>
+            {barcodeScanningEnabled && (
+              <button
+                onClick={() => setShowScanner(true)}
+                className="w-full sm:w-auto px-4 py-2 bg-blue-700 text-white hover:bg-blue-800 rounded-lg transition-colors font-bold text-center"
+              >
+                📷 Scan Barcode
+              </button>
+            )}
             <Link
               href="/admin/dashboard"
               className="w-full sm:w-auto px-4 py-2 bg-gray-800 text-white hover:bg-gray-900 rounded-lg transition-colors font-medium text-center"

@@ -156,12 +156,28 @@ export default function AdminSystemConfigPage() {
                     )}
                     {editingKey === config.key ? (
                       <div className="space-y-3">
-                        <input
-                          type="text"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          className="w-full px-3 py-2 border-2 border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
-                        />
+                        {config.key.includes("enabled") || config.key.includes("required") || config.key.includes("auto") || config.key.includes("mode") || config.key.includes("scanning") ? (
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={editValue === "true"}
+                                onChange={(e) => setEditValue(e.target.checked ? "true" : "false")}
+                                className="w-5 h-5 text-gray-900 border-gray-600 rounded focus:ring-gray-900"
+                              />
+                              <span className="text-sm font-bold text-gray-900">
+                                {editValue === "true" ? "Enabled" : "Disabled"}
+                              </span>
+                            </label>
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="w-full px-3 py-2 border-2 border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
+                          />
+                        )}
                         <div className="flex flex-col sm:flex-row gap-2">
                           <button
                             onClick={() => handleSave(config.key)}
@@ -181,9 +197,19 @@ export default function AdminSystemConfigPage() {
                       <div className="space-y-2">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                           <span className="text-sm font-bold text-gray-900">Value:</span>
-                          <span className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded break-all">
-                            {config.value}
-                          </span>
+                          {config.key.includes("enabled") || config.key.includes("required") || config.key.includes("auto") || config.key.includes("mode") || config.key.includes("scanning") ? (
+                            <span className={`text-sm font-bold px-3 py-1 rounded ${
+                              config.value === "true" 
+                                ? "bg-emerald-100 text-emerald-800" 
+                                : "bg-red-100 text-red-800"
+                            }`}>
+                              {config.value === "true" ? "✓ Enabled" : "✗ Disabled"}
+                            </span>
+                          ) : (
+                            <span className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded break-all">
+                              {config.value}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-600 break-words">
                           Last updated: {new Date(config.updatedAt).toLocaleString()}

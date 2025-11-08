@@ -62,6 +62,20 @@ export default function RegisterAssetPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [documentUrls, setDocumentUrls] = useState<string[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [barcodeScanningEnabled, setBarcodeScanningEnabled] = useState(true)
+
+  useEffect(() => {
+    // Check if barcode scanning is enabled
+    fetch("/api/system-config/check?key=feature.barcode.scanning&type=boolean")
+      .then((res) => res.json())
+      .then((data) => {
+        setBarcodeScanningEnabled(data.value === true || data.value === "true")
+      })
+      .catch(() => {
+        // Default to enabled if check fails
+        setBarcodeScanningEnabled(true)
+      })
+  }, [])
 
   useEffect(() => {
     // Fetch users for allocation dropdown (only lecturers and officers)

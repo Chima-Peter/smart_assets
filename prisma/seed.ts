@@ -674,23 +674,28 @@ async function main() {
     const category = configCategories[i % configCategories.length]
     let value = ''
     let description = ''
+    let configType: 'BOOLEAN' | 'STRING' | 'NUMBER' | undefined = undefined
 
     switch (key) {
       case 'notification.email.enabled':
         value = 'true'
         description = 'Enable email notifications'
+        configType = 'BOOLEAN'
         break
       case 'notification.sms.enabled':
         value = 'false'
         description = 'Enable SMS notifications'
+        configType = 'BOOLEAN'
         break
       case 'maintenance.reminder.days':
         value = '7'
         description = 'Days before maintenance to send reminder'
+        configType = 'NUMBER'
         break
       case 'inventory.low_stock.threshold':
         value = '20'
         description = 'Percentage threshold for low stock alerts'
+        configType = 'NUMBER'
         break
       case 'asset.barcode.format':
         value = 'CODE128'
@@ -707,6 +712,7 @@ async function main() {
       case 'security.session.timeout':
         value = '3600'
         description = 'Session timeout in seconds'
+        configType = 'NUMBER'
         break
       case 'report.export.format':
         value = 'PDF'
@@ -715,26 +721,32 @@ async function main() {
       case 'asset.auto_archive.days':
         value = '365'
         description = 'Days before auto-archiving retired assets'
+        configType = 'NUMBER'
         break
       case 'transfer.approval.required':
         value = 'true'
         description = 'Require approval for transfers'
+        configType = 'BOOLEAN'
         break
       case 'request.auto_approve.threshold':
         value = '0'
         description = 'Auto-approve threshold (0 = disabled)'
+        configType = 'NUMBER'
         break
       case 'maintenance.schedule.auto':
         value = 'false'
         description = 'Auto-schedule preventive maintenance'
+        configType = 'BOOLEAN'
         break
       case 'notification.batch.size':
         value = '100'
         description = 'Batch size for sending notifications'
+        configType = 'NUMBER'
         break
       case 'audit.log.retention.days':
         value = '365'
         description = 'Days to retain audit logs'
+        configType = 'NUMBER'
         break
       case 'backup.frequency':
         value = 'daily'
@@ -747,14 +759,17 @@ async function main() {
       case 'system.maintenance.mode':
         value = 'false'
         description = 'System maintenance mode'
+        configType = 'BOOLEAN'
         break
       case 'feature.barcode.scanning':
         value = 'true'
         description = 'Enable barcode scanning feature'
+        configType = 'BOOLEAN'
         break
       case 'feature.file.upload.max_size':
         value = '10485760'
         description = 'Maximum file upload size in bytes (10MB)'
+        configType = 'NUMBER'
         break
     }
 
