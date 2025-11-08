@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
 import LoadingSpinner from "@/components/LoadingSpinner"
 import BarcodeScanner from "@/components/BarcodeScanner"
@@ -115,12 +116,12 @@ export default function OfficerAssetsPage() {
             >
               📷 Scan Barcode
             </button>
-            <a
+            <Link
               href="/officer/dashboard"
               className="px-4 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-bold shadow-lg"
             >
               ← Back to Dashboard
-            </a>
+            </Link>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
 import LoadingSpinner from "@/components/LoadingSpinner"
 
@@ -55,18 +56,18 @@ export default function CourseRepDashboard() {
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-300">
           <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">View Available Items</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <a
+            <Link
               href="/course-rep/consumables"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               View Consumables
-            </a>
-            <a
+            </Link>
+            <Link
               href="/course-rep/teaching-aids"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               View Teaching Aids
-            </a>
+            </Link>
           </div>
         </div>
       </div>

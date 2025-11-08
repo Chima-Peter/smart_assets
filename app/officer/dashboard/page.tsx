@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
 
 interface Asset {
@@ -21,11 +22,15 @@ export default function OfficerDashboard() {
       fetch("/api/assets").then((res) => res.json()),
       fetch("/api/requests?status=PENDING").then((res) => res.json()),
     ]).then(([assets, requests]: [Asset[], unknown[]]) => {
-      setStats({
-        totalAssets: assets.length,
-        availableAssets: assets.filter((a) => a.status === "AVAILABLE").length,
-        pendingRequests: requests.length,
-      })
+      if (Array.isArray(assets) && Array.isArray(requests)) {
+        setStats({
+          totalAssets: assets.length,
+          availableAssets: assets.filter((a) => a.status === "AVAILABLE").length,
+          pendingRequests: requests.length,
+        })
+      }
+    }).catch((error) => {
+      console.error("Error fetching dashboard stats:", error)
     })
   }, [])
 
@@ -41,6 +46,11 @@ export default function OfficerDashboard() {
               <p className="text-3xl font-bold text-gray-900">{stats.totalAssets || 0}</p>
               <p className="text-sm text-gray-700 mt-2 font-medium">
                 {stats.availableAssets || 0} available
+                {stats.totalAssets && stats.availableAssets && stats.totalAssets > stats.availableAssets && (
+                  <span className="block text-xs text-gray-600 mt-1">
+                    ({stats.totalAssets - stats.availableAssets} in use or other statuses)
+                  </span>
+                )}
               </p>
             </div>
 
@@ -54,24 +64,24 @@ export default function OfficerDashboard() {
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-300">
           <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            <a
+            <Link
               href="/officer/register"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               Register New Asset
-            </a>
-            <a
+            </Link>
+            <Link
               href="/officer/requests"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               Approve Requests
-            </a>
-            <a
+            </Link>
+            <Link
               href="/officer/transfers"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               Manage Transfers
-            </a>
+            </Link>
           </div>
         </div>
       </div>

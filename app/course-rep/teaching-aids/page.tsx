@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
 import LoadingSpinner from "@/components/LoadingSpinner"
 import { AssetType } from "@/lib/prisma/enums"
@@ -54,12 +55,12 @@ export default function CourseRepTeachingAidsPage() {
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Available Teaching Aids</h1>
-          <a
+          <Link
             href="/course-rep/dashboard"
             className="w-full sm:w-auto px-4 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-bold shadow-lg text-center sm:text-left"
           >
             ← Back to Dashboard
-          </a>
+          </Link>
         </div>
 
         {/* Search */}

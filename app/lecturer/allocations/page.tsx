@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
 import LoadingSpinner from "@/components/LoadingSpinner"
 import { AssetType, AssetStatus } from "@/lib/prisma/enums"
@@ -75,12 +76,12 @@ export default function LecturerAllocationsPage() {
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Allocations</h1>
-          <a
+          <Link
             href="/lecturer/dashboard"
             className="w-full sm:w-auto px-4 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-bold shadow-lg text-center sm:text-left"
           >
             ← Back to Dashboard
-          </a>
+          </Link>
         </div>
 
         {/* Filter */}
@@ -110,12 +111,12 @@ export default function LecturerAllocationsPage() {
         ) : assets.length === 0 ? (
           <div className="bg-white p-8 rounded-lg shadow border border-gray-300 text-center">
             <p className="text-gray-900 font-medium">No allocated assets found.</p>
-            <a
+            <Link
               href="/lecturer/request"
               className="mt-4 inline-block px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 font-bold"
             >
               Request an Asset
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow border border-gray-300 overflow-hidden">

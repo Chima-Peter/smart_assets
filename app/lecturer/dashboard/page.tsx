@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
 import LoadingSpinner from "@/components/LoadingSpinner"
 
@@ -64,24 +65,24 @@ export default function LecturerDashboard() {
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-300">
           <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            <a
+            <Link
               href="/lecturer/request"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               Request Item
-            </a>
-            <a
+            </Link>
+            <Link
               href="/lecturer/my-requests"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               View My Requests
-            </a>
-            <a
+            </Link>
+            <Link
               href="/lecturer/allocations"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               My Allocations
-            </a>
+            </Link>
           </div>
         </div>
       </div>

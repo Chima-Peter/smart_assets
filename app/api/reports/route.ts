@@ -11,6 +11,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { searchParams } = new URL(req.url)
+    const type = searchParams.get("type") || "summary"
+
     // Check permissions - admins can generate global reports, officers can generate departmental reports
     if (session.user.role === UserRole.FACULTY_ADMIN) {
       if (!hasPermission(session.user.role, "GENERATE_GLOBAL_REPORTS")) {
@@ -28,9 +31,6 @@ export async function GET(req: NextRequest) {
     } else {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
-
-    const { searchParams } = new URL(req.url)
-    const type = searchParams.get("type") || "summary"
 
     if (type === "summary") {
       const [
@@ -76,30 +76,30 @@ export async function GET(req: NextRequest) {
         },
         orderBy: { createdAt: "desc" }
       })
-      return NextResponse.json(assets)
+      return NextResponse.json({ assets })
     }
 
     if (type === "requests") {
       const requests = await prisma.request.findMany({
         include: {
-          asset: true,
+          asset: { select: { id: true, name: true, assetCode: true } },
           requestedByUser: { select: { name: true, email: true } }
         },
         orderBy: { createdAt: "desc" }
       })
-      return NextResponse.json(requests)
+      return NextResponse.json({ requests })
     }
 
     if (type === "transfers") {
       const transfers = await prisma.transfer.findMany({
         include: {
-          asset: true,
+          asset: { select: { id: true, name: true, assetCode: true } },
           fromUser: { select: { name: true, email: true } },
           toUser: { select: { name: true, email: true } }
         },
         orderBy: { createdAt: "desc" }
       })
-      return NextResponse.json(transfers)
+      return NextResponse.json({ transfers })
     }
 
     if (type === "maintenance") {

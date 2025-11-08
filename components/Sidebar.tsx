@@ -70,7 +70,7 @@ export default function Sidebar({ role, userName, onClose }: SidebarProps) {
   const links = getLinks()
 
   return (
-    <div className="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
+    <div className="w-64 bg-gray-900 text-white h-full flex flex-col">
       {/* Mobile close button */}
       <div className="lg:hidden flex justify-end p-4">
         <button
@@ -94,12 +94,12 @@ export default function Sidebar({ role, userName, onClose }: SidebarProps) {
         </button>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 flex-shrink-0">
         <h1 className="text-xl sm:text-2xl font-bold mb-2 text-white">Asset Manager</h1>
         <p className="text-gray-200 text-sm font-medium truncate">{userName}</p>
         <p className="text-gray-300 text-xs mt-1 capitalize font-medium">{role.toLowerCase().replace("_", " ")}</p>
       </div>
-      <nav className="mt-8 flex-1 overflow-y-auto">
+      <nav className="flex-1 overflow-y-auto">
         {links.map((link) => (
           <Link
             key={link.href}
@@ -114,7 +114,7 @@ export default function Sidebar({ role, userName, onClose }: SidebarProps) {
           </Link>
         ))}
       </nav>
-      <div className="p-6 border-t border-gray-800">
+      <div className="p-6 border-t border-gray-800 flex-shrink-0">
         <button
           onClick={() => {
             handleLinkClick()

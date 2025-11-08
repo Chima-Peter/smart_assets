@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
 import LoadingSpinner from "@/components/LoadingSpinner"
 import BarcodeScanner from "@/components/BarcodeScanner"
@@ -117,12 +118,12 @@ export default function AdminAssetsPage() {
             >
               📷 Scan Barcode
             </button>
-            <a
+            <Link
               href="/admin/dashboard"
               className="w-full sm:w-auto px-4 py-2 bg-gray-800 text-white hover:bg-gray-900 rounded-lg transition-colors font-medium text-center"
             >
               ← Back to Dashboard
-            </a>
+            </Link>
           </div>
         </div>
 

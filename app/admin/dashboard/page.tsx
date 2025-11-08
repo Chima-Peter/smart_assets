@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
 
 interface DashboardStats {
@@ -41,11 +42,16 @@ export default function AdminDashboard() {
               <p className="text-3xl font-bold text-gray-900">{stats.assets?.total || 0}</p>
               <p className="text-sm text-gray-700 mt-2 font-medium">
                 {stats.assets?.available || 0} available, {stats.assets?.allocated || 0} allocated
+                {stats.assets && (stats.assets.total || 0) > ((stats.assets.available || 0) + (stats.assets.allocated || 0)) && (
+                  <span className="block text-xs text-gray-600 mt-1">
+                    ({(stats.assets.total || 0) - ((stats.assets.available || 0) + (stats.assets.allocated || 0))} in other statuses)
+                  </span>
+                )}
               </p>
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow border-2 border-gray-800">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Requests</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Total Requests</h3>
               <p className="text-3xl font-bold text-gray-900">{stats.requests?.total || 0}</p>
               <p className="text-sm text-gray-700 mt-2 font-medium">
                 {stats.requests?.pending || 0} pending approval
@@ -65,30 +71,30 @@ export default function AdminDashboard() {
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-300">
           <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <a
+            <Link
               href="/admin/assets"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               View All Assets
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/requests"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               Review Requests
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/transfers"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               Approve Transfers
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/reports"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               Generate Reports
-            </a>
+            </Link>
           </div>
         </div>
       </div>

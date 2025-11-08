@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
 import LoadingSpinner from "@/components/LoadingSpinner"
 import { UserRole } from "@/lib/prisma/enums"
@@ -112,12 +113,12 @@ export default function AdminUsersPage() {
             >
               {showCreateForm ? "Cancel" : "+ Create User"}
             </button>
-            <a
+            <Link
               href="/admin/dashboard"
               className="px-4 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg transition-colors font-bold"
             >
               ← Back
-            </a>
+            </Link>
           </div>
         </div>
 
