@@ -15,7 +15,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -82,7 +82,7 @@ export async function POST(
     return NextResponse.json(updatedRequest)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 })
+      return NextResponse.json({ error: error.issues }, { status: 400 })
     }
     console.error("Error approving request:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
