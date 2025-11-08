@@ -29,6 +29,8 @@ export default function Sidebar({ role, userName, onClose }: SidebarProps) {
     { href: "/admin/transfers", label: "Transfers", icon: "🔄" },
     { href: "/admin/reports", label: "Reports", icon: "📈" },
     { href: "/admin/users", label: "Users", icon: "👥" },
+    { href: "/admin/activity-logs", label: "Activity Logs", icon: "📝" },
+    { href: "/notifications", label: "Notifications", icon: "🔔" },
   ]
 
   const officerLinks = [
@@ -37,6 +39,8 @@ export default function Sidebar({ role, userName, onClose }: SidebarProps) {
     { href: "/officer/register", label: "Register Asset", icon: "➕" },
     { href: "/officer/requests", label: "Approve Requests", icon: "✅" },
     { href: "/officer/transfers", label: "Manage Transfers", icon: "🔄" },
+    { href: "/officer/activity-logs", label: "Activity Logs", icon: "📝" },
+    { href: "/notifications", label: "Notifications", icon: "🔔" },
   ]
 
   const lecturerLinks = [
@@ -44,12 +48,15 @@ export default function Sidebar({ role, userName, onClose }: SidebarProps) {
     { href: "/lecturer/request", label: "Request Item", icon: "📝" },
     { href: "/lecturer/my-requests", label: "My Requests", icon: "📋" },
     { href: "/lecturer/allocations", label: "My Allocations", icon: "📦" },
+    { href: "/lecturer/activity-logs", label: "My Activity", icon: "📝" },
+    { href: "/notifications", label: "Notifications", icon: "🔔" },
   ]
 
   const courseRepLinks = [
     { href: "/course-rep/dashboard", label: "Dashboard", icon: "📊" },
     { href: "/course-rep/consumables", label: "Consumables", icon: "📦" },
     { href: "/course-rep/teaching-aids", label: "Teaching Aids", icon: "🎓" },
+    { href: "/notifications", label: "Notifications", icon: "🔔" },
   ]
 
   const getLinks = () => {
