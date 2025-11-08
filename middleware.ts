@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
-import { UserRole } from "@/lib/prisma/enums"
+import { UserRole } from "@/lib/types"
 
 export default auth((req) => {
   const session = req.auth

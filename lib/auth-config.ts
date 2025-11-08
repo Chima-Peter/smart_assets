@@ -1,6 +1,6 @@
 import type { NextAuthConfig } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { UserRole } from "@/lib/prisma/enums"
+import { UserRole } from "@/lib/types"
 
 // This config is safe for Edge Runtime (middleware)
 // Prisma is imported lazily in the authorize function
@@ -20,8 +20,9 @@ export const authOptions: NextAuthConfig = {
         }
 
         // Lazy import Prisma to avoid Edge Runtime issues in middleware
-        // Using dynamic import with a variable to prevent static analysis
-        const prismaModule = await import("@/lib/prisma")
+        // Using Function constructor to prevent static analysis by bundler
+        const getPrisma = new Function('return import("@/lib/prisma")')
+        const prismaModule = await getPrisma()
         const { prisma } = prismaModule
         const bcrypt = await import("bcryptjs")
 

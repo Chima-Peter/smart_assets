@@ -1,4 +1,4 @@
-import { UserRole } from "@/lib/prisma/enums"
+import { UserRole } from "@/lib/types"
 import "next-auth"
 
 declare module "next-auth" {
