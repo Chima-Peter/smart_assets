@@ -20,11 +20,11 @@ export const authOptions: NextAuthConfig = {
         }
 
         // Lazy import the authorize function to avoid Edge Runtime issues in middleware
-        // Using direct dynamic import - this only runs at runtime in API routes (Node.js)
+        // Direct dynamic import - this only runs in Node.js runtime (API routes), not Edge
         // The authorize function is only called from API routes, never from middleware
-        // Direct dynamic import works here because we're already in a runtime context
         try {
           // Direct dynamic import with path alias - Next.js resolves this at runtime
+          // This is safe because authorize() only executes in Node.js runtime, not Edge
           const libModule = await import('@/lib/auth-authorize')
           const { authorizeUser } = libModule
 
