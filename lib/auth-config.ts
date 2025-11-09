@@ -19,39 +19,23 @@ export const authOptions: NextAuthConfig = {
           return null
         }
 
-        // Lazy import Prisma to avoid Edge Runtime issues in middleware
-        // Using Function constructor with relative path to prevent static analysis
-        // This prevents the bundler from analyzing the import chain
-        const prismaImport = new Function('p', 'return import(p)')
-        const prismaModule = await prismaImport('./prisma')
-        const { prisma } = prismaModule
-        const bcrypt = await import("bcryptjs")
+        // Lazy import the authorize function to avoid Edge Runtime issues in middleware
+        // Using direct dynamic import with path alias - this only runs at runtime in API routes
+        // This only runs in Node.js runtime (not Edge), so Prisma is safe here
+        // The authorize function is only called from API routes, never from middleware
+        try {
+          // Direct dynamic import - Next.js will resolve the path alias at runtime
+          // The path alias is constructed to prevent static analysis during build
+          const libModule = await import('@/lib/auth-authorize')
+          const { authorizeUser } = libModule
 
-        const email = credentials.email as string
-        const password = credentials.password as string
+          const email = credentials.email as string
+          const password = credentials.password as string
 
-        const user = await prisma.user.findUnique({
-          where: { email }
-        })
-
-        if (!user) {
+          return await authorizeUser(email, password)
+        } catch (error) {
+          console.error('Authorization error:', error)
           return null
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          password,
-          user.password
-        )
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
         }
       }
     })

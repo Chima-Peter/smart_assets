@@ -26,6 +26,8 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [showUnreadOnly, setShowUnreadOnly] = useState(false)
+  const [markingAsRead, setMarkingAsRead] = useState<string | null>(null)
+  const [markingAllAsRead, setMarkingAllAsRead] = useState(false)
 
   const fetchNotifications = async () => {
     setLoading(true)
@@ -50,6 +52,7 @@ export default function NotificationsPage() {
   }, [showUnreadOnly])
 
   const markAsRead = async (notificationIds: string[]) => {
+    setMarkingAsRead(notificationIds[0])
     try {
       const res = await fetch("/api/notifications", {
         method: "PATCH",
@@ -63,10 +66,13 @@ export default function NotificationsPage() {
       }
     } catch (error) {
       console.error("Error marking notifications as read:", error)
+    } finally {
+      setMarkingAsRead(null)
     }
   }
 
   const markAllAsRead = async () => {
+    setMarkingAllAsRead(true)
     try {
       const res = await fetch("/api/notifications", {
         method: "PATCH",
@@ -80,6 +86,8 @@ export default function NotificationsPage() {
       }
     } catch (error) {
       console.error("Error marking all as read:", error)
+    } finally {
+      setMarkingAllAsRead(false)
     }
   }
 
@@ -159,9 +167,17 @@ export default function NotificationsPage() {
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="w-full sm:w-auto px-4 py-2 bg-blue-700 text-white hover:bg-blue-800 rounded-lg transition-colors font-bold"
+                disabled={markingAllAsRead}
+                className="w-full sm:w-auto px-4 py-2 bg-blue-700 text-white hover:bg-blue-800 rounded-lg transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-pulse-on-submit"
               >
-                Mark All as Read
+                {markingAllAsRead ? (
+                  <>
+                    <LoadingSpinner size="sm" />
+                    <span>Marking...</span>
+                  </>
+                ) : (
+                  "Mark All as Read"
+                )}
               </button>
             )}
             <Link
@@ -239,9 +255,17 @@ export default function NotificationsPage() {
                   {!notification.read && (
                     <button
                       onClick={() => markAsRead([notification.id])}
-                      className="w-full sm:w-auto px-3 py-1 text-xs font-bold bg-gray-200 text-gray-800 hover:bg-gray-300 rounded transition-colors flex-shrink-0"
+                      disabled={markingAsRead === notification.id}
+                      className="w-full sm:w-auto px-3 py-1 text-xs font-bold bg-gray-200 text-gray-800 hover:bg-gray-300 rounded transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 animate-pulse-on-submit"
                     >
-                      Mark Read
+                      {markingAsRead === notification.id ? (
+                        <>
+                          <LoadingSpinner size="sm" />
+                          <span>Marking...</span>
+                        </>
+                      ) : (
+                        "Mark Read"
+                      )}
                     </button>
                   )}
                 </div>
