@@ -20,12 +20,11 @@ export const authOptions: NextAuthConfig = {
         }
 
         // Lazy import the authorize function to avoid Edge Runtime issues in middleware
-        // Using direct dynamic import with path alias - this only runs at runtime in API routes
-        // This only runs in Node.js runtime (not Edge), so Prisma is safe here
+        // Using direct dynamic import - this only runs at runtime in API routes (Node.js)
         // The authorize function is only called from API routes, never from middleware
+        // Direct dynamic import works here because we're already in a runtime context
         try {
-          // Direct dynamic import - Next.js will resolve the path alias at runtime
-          // The path alias is constructed to prevent static analysis during build
+          // Direct dynamic import with path alias - Next.js resolves this at runtime
           const libModule = await import('@/lib/auth-authorize')
           const { authorizeUser } = libModule
 
