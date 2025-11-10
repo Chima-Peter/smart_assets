@@ -103,10 +103,11 @@ model Asset {
   documentUrls  String? // JSON array of document URLs
   isArchived    Boolean        @default(false)
   archivedAt    DateTime?
-  // Consumable inventory tracking
-  quantity      Int?        // Current stock quantity (for consumables)
-  minStockLevel Int?        // Minimum stock level before reorder alert
-  unit          String?     // Unit of measurement (e.g., "boxes", "units", "liters")
+  // Inventory tracking (works for all asset types)
+  quantity         Int?        @default(1) // Total quantity available
+  allocatedQuantity Int?       @default(0) // Currently allocated/rented quantity
+  minStockLevel    Int?        // Minimum stock level before reorder alert
+  unit             String?     // Unit of measurement (e.g., "boxes", "units", "liters", "pieces")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -127,6 +128,7 @@ model Request {
   requestedBy       String
   requestedByUser   User          @relation(fields: [requestedBy], references: [id])
   status            RequestStatus @default(PENDING)
+  requestedQuantity Int           @default(1) // How many units the lecturer needs
   purpose           String?
   requestedAt       DateTime      @default(now())
   approvedAt        DateTime?
@@ -173,10 +175,11 @@ model Transfer {
   id                 String         @id @default(cuid())
   assetId            String
   asset              Asset          @relation(fields: [assetId], references: [id])
-  fromUserId         String
-  fromUser           User           @relation("TransferFrom", fields: [fromUserId], references: [id])
+  fromUserId         String?        // Null for officer-to-lecturer transfers (officer doesn't own asset)
+  fromUser           User?          @relation("TransferFrom", fields: [fromUserId], references: [id])
   toUserId           String
   toUser             User           @relation("TransferTo", fields: [toUserId], references: [id])
+  transferQuantity   Int           @default(1) // Quantity being transferred
   initiatedBy        String // Officer who initiated the transfer
   initiatedByUser    User           @relation("InitiatedTransfers", fields: [initiatedBy], references: [id])
   status             TransferStatus @default(PENDING)

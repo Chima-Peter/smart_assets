@@ -4,22 +4,18 @@ import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import DashboardLayout from "@/components/DashboardLayout"
 import LoadingSpinner from "@/components/LoadingSpinner"
-import { AssetStatus } from "@/lib/prisma/enums"
+import { AssetType, AssetStatus } from "@/lib/prisma/enums"
 
 interface Asset {
   id: string
   name: string
+  description: string | null
   assetCode: string
-  type: string
+  type: AssetType
+  status: AssetStatus
   quantity: number | null
   allocatedQuantity: number | null
   unit: string | null
-  allocatedToUser: {
-    id: string
-    name: string
-    email: string
-    department: string | null
-  } | null
 }
 
 interface User {
@@ -27,9 +23,10 @@ interface User {
   name: string
   email: string
   department: string | null
+  role: string
 }
 
-export default function CreateTransferPage() {
+export default function LecturerTransferPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -38,35 +35,44 @@ export default function CreateTransferPage() {
   const [formData, setFormData] = useState({
     assetId: "",
     toUserId: "",
-    fromUserId: "", // Optional - empty for officer-to-lecturer transfers
     transferQuantity: "1",
     reason: "",
     notes: "",
+    transferBackToStock: false,
   })
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    setMessage(null)
     try {
-      // Fetch both available and allocated assets for officer-to-lecturer transfers
-      const [availableAssetsRes, allocatedAssetsRes, usersRes] = await Promise.all([
-        fetch("/api/assets?status=AVAILABLE"),
-        fetch("/api/assets?status=ALLOCATED"),
+      const [assetsRes, usersRes] = await Promise.all([
+        fetch("/api/assets?status=ALLOCATED"), // Only assets allocated to this lecturer
         fetch("/api/users"),
       ])
 
-      if (!availableAssetsRes.ok || !allocatedAssetsRes.ok || !usersRes.ok) throw new Error("Failed to fetch data")
+      if (!assetsRes.ok) {
+        const errorData = await assetsRes.json().catch(() => ({}))
+        throw new Error(errorData.error || `Failed to fetch assets: ${assetsRes.status}`)
+      }
 
-      const [availableAssets, allocatedAssets, usersData] = await Promise.all([
-        availableAssetsRes.json(),
-        allocatedAssetsRes.json(),
+      if (!usersRes.ok) {
+        const errorData = await usersRes.json().catch(() => ({}))
+        throw new Error(errorData.error || `Failed to fetch users: ${usersRes.status}`)
+      }
+
+      const [assetsData, usersData] = await Promise.all([
+        assetsRes.json(),
         usersRes.json(),
       ])
-      // Combine available and allocated assets
-      setAssets([...availableAssets, ...allocatedAssets])
+      setAssets(assetsData)
+      // Users API already filters to show lecturers, officers, and admins for lecturers
       setUsers(usersData)
     } catch (error) {
       console.error("Error fetching data:", error)
-      setMessage({ type: "error", text: "Failed to load data" })
+      setMessage({ 
+        type: "error", 
+        text: error instanceof Error ? error.message : "Failed to load data" 
+      })
     } finally {
       setLoading(false)
     }
@@ -82,14 +88,18 @@ export default function CreateTransferPage() {
     setMessage(null)
 
     try {
+      const transferData = {
+        assetId: formData.assetId,
+        toUserId: formData.transferBackToStock ? "STOCK" : formData.toUserId,
+        transferQuantity: parseInt(formData.transferQuantity) || 1,
+        reason: formData.reason || undefined,
+        notes: formData.notes || undefined,
+      }
+
       const res = await fetch("/api/transfers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          transferQuantity: parseInt(formData.transferQuantity) || 1,
-          fromUserId: formData.fromUserId || undefined, // Empty string becomes undefined for officer-to-lecturer
-        }),
+        body: JSON.stringify(transferData),
       })
 
       const data = await res.json()
@@ -98,11 +108,21 @@ export default function CreateTransferPage() {
         throw new Error(data.error || "Failed to create transfer")
       }
 
-      setMessage({ type: "success", text: "Transfer created successfully! It is now pending approval." })
-      setFormData({ assetId: "", toUserId: "", fromUserId: "", transferQuantity: "1", reason: "", notes: "" })
-      setTimeout(() => {
-        window.location.href = "/officer/transfers"
-      }, 2000)
+      setMessage({ 
+        type: "success", 
+        text: formData.transferBackToStock 
+          ? "Transfer back to stock created successfully! It is now pending approval." 
+          : "Transfer created successfully! It is now pending approval." 
+      })
+      setFormData({ 
+        assetId: "", 
+        toUserId: "", 
+        transferQuantity: "1", 
+        reason: "", 
+        notes: "",
+        transferBackToStock: false,
+      })
+      await fetchData()
     } catch (error) {
       console.error("Error creating transfer:", error)
       setMessage({
@@ -120,12 +140,12 @@ export default function CreateTransferPage() {
     <DashboardLayout>
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Initiate Transfer</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Transfer Asset</h1>
           <Link
-            href="/officer/transfers"
+            href="/lecturer/dashboard"
             className="w-full sm:w-auto px-4 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-bold shadow-lg text-center sm:text-left"
           >
-            ← Back to Transfers
+            ← Back to Dashboard
           </Link>
         </div>
 
@@ -162,32 +182,17 @@ export default function CreateTransferPage() {
                   {assets.map((asset) => (
                     <option key={asset.id} value={asset.id}>
                       {asset.assetCode} - {asset.name}
-                      {asset.allocatedToUser && ` (Currently with: ${asset.allocatedToUser.name})`}
                     </option>
                   ))}
                 </select>
                 {selectedAsset && (
                   <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    {selectedAsset.allocatedToUser ? (
-                      <>
-                        <p className="text-sm font-bold text-gray-900">Current Holder:</p>
-                        <p className="text-sm text-gray-700">
-                          {selectedAsset.allocatedToUser.name} ({selectedAsset.allocatedToUser.email})
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Department: {selectedAsset.allocatedToUser.department || "N/A"}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-sm font-bold text-gray-900">Available in Stock</p>
-                    )}
-                    {selectedAsset.quantity && (
-                      <p className="text-xs text-gray-600 mt-1">
-                        Total: {selectedAsset.quantity} {selectedAsset.unit || "units"} | 
-                        Allocated: {selectedAsset.allocatedQuantity || 0} | 
-                        Available: {(selectedAsset.quantity ?? 1) - (selectedAsset.allocatedQuantity ?? 0)}
-                      </p>
-                    )}
+                    <p className="text-sm font-bold text-gray-900">Asset Details:</p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Type: {selectedAsset.type.replace("_", " ")} | 
+                      Total: {selectedAsset.quantity ?? 1} {selectedAsset.unit || "units"} | 
+                      Allocated: {selectedAsset.allocatedQuantity || 0}
+                    </p>
                   </div>
                 )}
               </div>
@@ -200,47 +205,50 @@ export default function CreateTransferPage() {
                   type="number"
                   required
                   min="1"
+                  max={selectedAsset?.allocatedQuantity || 1}
                   value={formData.transferQuantity}
                   onChange={(e) => setFormData({ ...formData, transferQuantity: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
                 />
                 {selectedAsset && (
                   <p className="text-xs text-gray-600 mt-1">
-                    Available: {(selectedAsset.quantity ?? 1) - (selectedAsset.allocatedQuantity ?? 0)} {selectedAsset.unit || "units"}
+                    You have {selectedAsset.allocatedQuantity || 0} unit(s) allocated
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-900 mb-2">
-                  Transfer To (Recipient) *
+                <label className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.transferBackToStock}
+                    onChange={(e) => setFormData({ ...formData, transferBackToStock: e.target.checked, toUserId: "" })}
+                    className="w-4 h-4 text-gray-900 border-gray-700 rounded focus:ring-gray-900"
+                  />
+                  <span className="text-sm font-bold text-gray-900">Transfer back to stock (return to officer)</span>
                 </label>
-                <select
-                  value={formData.toUserId}
-                  onChange={(e) => setFormData({ ...formData, toUserId: e.target.value })}
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
-                >
-                  <option value="">-- Select Recipient --</option>
-                  {users
-                    .filter((user) => user.id !== selectedAsset?.allocatedToUser?.id)
-                    .map((user) => (
+              </div>
+
+              {!formData.transferBackToStock && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Transfer To (Recipient) *
+                  </label>
+                  <select
+                    value={formData.toUserId}
+                    onChange={(e) => setFormData({ ...formData, toUserId: e.target.value })}
+                    required={!formData.transferBackToStock}
+                    className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
+                  >
+                    <option value="">-- Select Recipient --</option>
+                    {users.map((user) => (
                       <option key={user.id} value={user.id}>
-                        {user.name} ({user.email}) - {user.department || "No Department"}
+                        {user.name} ({user.email}) - {user.department || "No Department"} - {user.role}
                       </option>
                     ))}
-                </select>
-                {formData.toUserId && selectedAsset?.allocatedToUser && (
-                  <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <p className="text-xs font-bold text-amber-900">
-                      {users.find((u) => u.id === formData.toUserId)?.department ===
-                      selectedAsset.allocatedToUser.department
-                        ? "Intra-Departmental Transfer (Officer approval required)"
-                        : "Inter-Departmental Transfer (Faculty Admin approval required)"}
-                    </p>
-                  </div>
-                )}
-              </div>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">Reason for Transfer *</label>
@@ -250,7 +258,9 @@ export default function CreateTransferPage() {
                   required
                   rows={3}
                   className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
-                  placeholder="Explain why this asset is being transferred..."
+                  placeholder={formData.transferBackToStock 
+                    ? "Explain why you're returning this asset to stock..." 
+                    : "Explain why this asset is being transferred..."}
                 />
               </div>
 
@@ -268,8 +278,8 @@ export default function CreateTransferPage() {
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-pulse-on-submit"
+                  disabled={submitting || (!formData.transferBackToStock && !formData.toUserId)}
+                  className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>
@@ -277,11 +287,11 @@ export default function CreateTransferPage() {
                       <span>Creating Transfer...</span>
                     </>
                   ) : (
-                    "Initiate Transfer"
+                    formData.transferBackToStock ? "Transfer Back to Stock" : "Initiate Transfer"
                   )}
                 </button>
                 <Link
-                  href="/officer/transfers"
+                  href="/lecturer/dashboard"
                   className="flex-1 sm:flex-initial px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-bold transition-colors text-center"
                 >
                   Cancel

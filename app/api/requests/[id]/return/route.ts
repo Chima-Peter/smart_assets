@@ -68,21 +68,51 @@ export async function POST(
         }
       })
 
-      // Update asset status based on condition
+      const requestedQuantity = request.requestedQuantity ?? 1
+      const currentAllocated = request.asset.allocatedQuantity ?? 0
+      
+      // Update asset based on return condition
       let assetStatus: AssetStatus = AssetStatus.AVAILABLE
-      if (returnCondition === "DAMAGED" || returnCondition === "NEEDS_REPAIR") {
-        assetStatus = AssetStatus.MAINTENANCE
-      } else if (returnCondition === "LOST") {
-        assetStatus = AssetStatus.RETIRED
-      }
+      let newAllocatedQuantity = currentAllocated
+      let quantityToReduce = requestedQuantity
 
-      await tx.asset.update({
-        where: { id: request.assetId },
-        data: {
-          status: assetStatus,
-          allocatedTo: null
-        }
-      })
+      if (returnCondition === "LOST") {
+        // Lost items: reduce total quantity, don't reduce allocated (they're gone)
+        const currentQuantity = request.asset.quantity ?? 1
+        await tx.asset.update({
+          where: { id: request.assetId },
+          data: {
+            quantity: Math.max(0, currentQuantity - quantityToReduce),
+            allocatedQuantity: Math.max(0, currentAllocated - quantityToReduce),
+            status: AssetStatus.RETIRED // Mark as retired if all lost
+          }
+        })
+      } else if (returnCondition === "DAMAGED" || returnCondition === "NEEDS_REPAIR") {
+        // Damaged items: reduce allocated, but don't make available (needs repair)
+        newAllocatedQuantity = Math.max(0, currentAllocated - quantityToReduce)
+        assetStatus = AssetStatus.MAINTENANCE
+        await tx.asset.update({
+          where: { id: request.assetId },
+          data: {
+            allocatedQuantity: newAllocatedQuantity,
+            status: assetStatus
+          }
+        })
+      } else {
+        // Functional/Good returns: reduce allocated, make available
+        newAllocatedQuantity = Math.max(0, currentAllocated - quantityToReduce)
+        const totalQuantity = request.asset.quantity ?? 1
+        const availableQuantity = totalQuantity - newAllocatedQuantity
+        
+        await tx.asset.update({
+          where: { id: request.assetId },
+          data: {
+            allocatedQuantity: newAllocatedQuantity,
+            allocatedTo: newAllocatedQuantity > 0 ? request.requestedBy : null, // Clear if all returned
+            status: availableQuantity > 0 ? AssetStatus.AVAILABLE : AssetStatus.ALLOCATED
+          }
+        })
+      }
 
       // Create notification for officers/admins about the return
       const officers = await tx.user.findMany({
@@ -100,8 +130,9 @@ export async function POST(
               userId: officer.id,
               type: "ASSET_RETURNED",
               title: "Asset Returned",
-              message: `${request.requestedByUser.name} returned "${request.asset.name}". Condition: ${returnCondition}`,
-              relatedRequestId: id
+              message: `${request.requestedByUser.name} returned ${requestedQuantity} unit(s) of "${request.asset.name}". Condition: ${returnCondition}`,
+              relatedRequestId: id,
+              relatedAssetId: request.assetId
             }
           })
         )

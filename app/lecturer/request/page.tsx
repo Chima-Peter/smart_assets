@@ -15,6 +15,9 @@ interface Asset {
   status: AssetStatus
   category: string | null
   location: string | null
+  quantity: number | null
+  allocatedQuantity: number | null
+  unit: string | null
 }
 
 export default function LecturerRequestPage() {
@@ -22,6 +25,7 @@ export default function LecturerRequestPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState<string>("")
+  const [requestedQuantity, setRequestedQuantity] = useState<string>("1")
   const [purpose, setPurpose] = useState("")
   const [notes, setNotes] = useState("")
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
@@ -65,6 +69,7 @@ export default function LecturerRequestPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           assetId: selectedAsset,
+          requestedQuantity: parseInt(requestedQuantity) || 1,
           purpose: purpose || undefined,
           notes: notes || undefined,
         }),
@@ -80,6 +85,7 @@ export default function LecturerRequestPage() {
 
       setMessage({ type: "success", text: "Request created successfully!" })
       setSelectedAsset("")
+      setRequestedQuantity("1")
       setPurpose("")
       setNotes("")
       await fetchAssets()
@@ -150,6 +156,34 @@ export default function LecturerRequestPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Quantity Needed *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={requestedQuantity}
+                  onChange={(e) => setRequestedQuantity(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium shadow-sm"
+                />
+                {selectedAsset && (() => {
+                  const asset = assets.find(a => a.id === selectedAsset)
+                  if (asset) {
+                    const totalQty = asset.quantity ?? 1
+                    const allocatedQty = asset.allocatedQuantity ?? 0
+                    const availableQty = totalQty - allocatedQty
+                    return (
+                      <p className="text-xs text-gray-600 mt-1">
+                        Available: {availableQty} {asset.unit || "units"}
+                      </p>
+                    )
+                  }
+                  return null
+                })()}
               </div>
 
               <div>

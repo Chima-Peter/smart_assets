@@ -22,7 +22,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check permissions - admins can view all users, officers can view departmental staff
+    // Check permissions - admins can view all users, officers can view departmental staff, lecturers can view users for transfers
     if (session.user.role === UserRole.FACULTY_ADMIN) {
       if (!hasPermission(session.user.role, "MANAGE_ALL_USERS")) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -54,6 +54,26 @@ export async function GET() {
       const where = currentUser?.department ? { department: currentUser.department } : {}
       const users = await prisma.user.findMany({
         where,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          department: true,
+          employeeId: true,
+          createdAt: true
+        },
+        orderBy: { createdAt: "desc" }
+      })
+      return NextResponse.json(users)
+    } else if (session.user.role === UserRole.LECTURER) {
+      // Lecturers can see users for transfer purposes (lecturers, officers, admins)
+      const users = await prisma.user.findMany({
+        where: {
+          role: {
+            in: [UserRole.LECTURER, UserRole.DEPARTMENTAL_OFFICER, UserRole.FACULTY_ADMIN]
+          }
+        },
         select: {
           id: true,
           email: true,

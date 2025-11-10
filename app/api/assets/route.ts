@@ -116,18 +116,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Asset code already exists" }, { status: 400 })
     }
 
+           // Set default quantity to 1 if not specified
+           const quantity = data.quantity ?? 1
+           const allocatedQuantity = data.allocatedTo ? quantity : 0
+           
            const asset = await prisma.asset.create({
              data: {
-               ...data,
+               name: data.name,
+               description: data.description ?? null,
+               assetCode: data.assetCode,
+               type: data.type,
+               category: data.category ?? null,
+               assetCategory: data.assetCategory ?? null,
+               location: data.location ?? null,
+               room: data.room ?? null,
                purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
+               purchasePrice: data.purchasePrice ?? null,
+               serialNumber: data.serialNumber ?? null,
+               manufacturer: data.manufacturer ?? null,
+               model: data.model ?? null,
                expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
                documentUrls: data.documentUrls ? JSON.stringify(data.documentUrls) : null,
-               quantity: data.type === AssetType.CONSUMABLE ? (data.quantity ?? null) : null,
-               minStockLevel: data.type === AssetType.CONSUMABLE ? (data.minStockLevel ?? null) : null,
-               unit: data.type === AssetType.CONSUMABLE ? (data.unit ?? null) : null,
+               quantity: quantity,
+               allocatedQuantity: allocatedQuantity,
+               minStockLevel: data.minStockLevel ?? null,
+               unit: data.unit ?? (data.type === AssetType.CONSUMABLE ? "units" : "pieces"),
                registeredBy: session.user.id,
+               allocatedTo: data.allocatedTo ?? null,
                status: data.allocatedTo ? AssetStatus.ALLOCATED : AssetStatus.AVAILABLE
-             },
+             } as any,
       include: {
         registeredByUser: {
           select: { name: true, email: true }

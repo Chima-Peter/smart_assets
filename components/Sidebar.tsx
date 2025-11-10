@@ -49,6 +49,7 @@ export default function Sidebar({ role, userName, onClose }: SidebarProps) {
     { href: "/lecturer/request", label: "Request Item", icon: "📝" },
     { href: "/lecturer/my-requests", label: "My Requests", icon: "📋" },
     { href: "/lecturer/allocations", label: "My Allocations", icon: "📦" },
+    { href: "/lecturer/transfer", label: "Transfer Asset", icon: "🔄" },
     { href: "/lecturer/activity-logs", label: "My Activity", icon: "📝" },
     { href: "/notifications", label: "Notifications", icon: "🔔" },
   ]

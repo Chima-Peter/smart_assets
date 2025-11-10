@@ -43,6 +43,20 @@ export async function POST(
       return NextResponse.json({ error: "Request is not pending" }, { status: 400 })
     }
 
+    // Check available quantity if approving
+    if (status === "APPROVED") {
+      const totalQuantity = request.asset.quantity ?? 1
+      const allocatedQuantity = request.asset.allocatedQuantity ?? 0
+      const availableQuantity = totalQuantity - allocatedQuantity
+      const requestedQuantity = request.requestedQuantity ?? 1
+
+      if (availableQuantity < requestedQuantity) {
+        return NextResponse.json({ 
+          error: `Insufficient quantity. Available: ${availableQuantity}, Requested: ${requestedQuantity}` 
+        }, { status: 400 })
+      }
+    }
+
     // Update request and asset status
     const updatedRequest = await prisma.$transaction(async (tx) => {
       const updateData: {
@@ -87,13 +101,62 @@ export async function POST(
       })
 
       if (status === "APPROVED") {
+        const requestedQuantity = request.requestedQuantity ?? 1
+        const currentAllocated = request.asset.allocatedQuantity ?? 0
+        const newAllocatedQuantity = currentAllocated + requestedQuantity
+        const totalQuantity = request.asset.quantity ?? 1
+        const availableQuantity = totalQuantity - newAllocatedQuantity
+
+        // Update asset with new allocated quantity
         await tx.asset.update({
           where: { id: request.assetId },
           data: {
-            status: AssetStatus.ALLOCATED,
-            allocatedTo: request.requestedBy
+            allocatedQuantity: newAllocatedQuantity,
+            allocatedTo: request.requestedBy, // Track who has it (for single-item assets)
+            // Update status based on availability
+            status: availableQuantity <= 0 ? AssetStatus.ALLOCATED : AssetStatus.AVAILABLE
           }
         })
+
+        // Check if we need to notify officers about low/zero stock
+        const officers = await tx.user.findMany({
+          where: {
+            role: {
+              in: ["DEPARTMENTAL_OFFICER", "FACULTY_ADMIN"]
+            }
+          }
+        })
+
+        // Notify if quantity is zero or all allocated
+        if (availableQuantity <= 0) {
+          await Promise.all(
+            officers.map(officer =>
+              tx.notification.create({
+                data: {
+                  userId: officer.id,
+                  type: "STOCK_OUT",
+                  title: "Asset Stock Depleted",
+                  message: `All units of "${req.asset.name}" (${req.asset.assetCode}) have been allocated. Total: ${totalQuantity}, Allocated: ${newAllocatedQuantity}`,
+                  relatedAssetId: request.assetId
+                }
+              })
+            )
+          )
+        } else if (request.asset.minStockLevel && availableQuantity <= request.asset.minStockLevel) {
+          await Promise.all(
+            officers.map(officer =>
+              tx.notification.create({
+                data: {
+                  userId: officer.id,
+                  type: "STOCK_LOW",
+                  title: "Low Stock Alert",
+                  message: `"${req.asset.name}" (${req.asset.assetCode}) is running low. Available: ${availableQuantity}, Minimum: ${request.asset.minStockLevel}`,
+                  relatedAssetId: request.assetId
+                }
+              })
+            )
+          )
+        }
 
         // Create notification for requester
         await tx.notification.create({
@@ -101,7 +164,7 @@ export async function POST(
             userId: request.requestedBy,
             type: "REQUEST_APPROVED",
             title: "Asset Request Approved",
-            message: `Your request for "${req.asset.name}" has been approved.`,
+            message: `Your request for ${requestedQuantity} unit(s) of "${req.asset.name}" has been approved.`,
             relatedRequestId: id
           }
         })

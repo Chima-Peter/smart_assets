@@ -7,6 +7,7 @@ import { z } from "zod"
 
 const requestSchema = z.object({
   assetId: z.string(),
+  requestedQuantity: z.number().int().min(1).default(1),
   purpose: z.string().optional(),
   notes: z.string().optional(),
 })
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = requestSchema.parse(body)
 
-    // Check if asset exists and is available
+    // Check if asset exists and has available quantity
     const asset = await prisma.asset.findUnique({
       where: { id: data.assetId }
     })
@@ -116,13 +117,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 })
     }
 
-    if (asset.status !== AssetStatus.AVAILABLE) {
-      return NextResponse.json({ error: "Asset is not available" }, { status: 400 })
+    // Calculate available quantity
+    const totalQuantity = asset.quantity ?? 1
+    const allocatedQuantity = asset.allocatedQuantity ?? 0
+    const availableQuantity = totalQuantity - allocatedQuantity
+
+    if (availableQuantity < data.requestedQuantity) {
+      return NextResponse.json({ 
+        error: `Insufficient quantity. Available: ${availableQuantity}, Requested: ${data.requestedQuantity}` 
+      }, { status: 400 })
+    }
+
+    if (asset.status === AssetStatus.RETIRED || asset.status === AssetStatus.MAINTENANCE) {
+      return NextResponse.json({ error: "Asset is not available for requests" }, { status: 400 })
     }
 
     const request = await prisma.request.create({
       data: {
-        ...data,
+        assetId: data.assetId,
+        requestedQuantity: data.requestedQuantity,
+        purpose: data.purpose,
+        notes: data.notes,
         requestedBy: session.user.id,
         status: RequestStatus.PENDING
       },

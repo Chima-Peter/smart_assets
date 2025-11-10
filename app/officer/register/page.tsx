@@ -52,7 +52,7 @@ export default function RegisterAssetPage() {
     model: "",
     expiryDate: "",
     allocatedTo: "",
-    quantity: "",
+    quantity: "1",
     minStockLevel: "",
     unit: "",
   })
@@ -142,9 +142,9 @@ export default function RegisterAssetPage() {
                  expiryDate: formData.expiryDate || undefined,
                  documentUrls: documentUrls.length > 0 ? documentUrls : undefined,
                  allocatedTo: formData.allocatedTo || undefined,
-                 quantity: formData.type === AssetType.CONSUMABLE && formData.quantity ? parseInt(formData.quantity) : undefined,
-                 minStockLevel: formData.type === AssetType.CONSUMABLE && formData.minStockLevel ? parseInt(formData.minStockLevel) : undefined,
-                 unit: formData.type === AssetType.CONSUMABLE && formData.unit ? formData.unit : undefined,
+                 quantity: formData.quantity ? parseInt(formData.quantity) : 1, // Quantity works for all asset types
+                 minStockLevel: formData.minStockLevel ? parseInt(formData.minStockLevel) : undefined,
+                 unit: formData.unit || undefined,
                }),
              })
 
@@ -173,7 +173,7 @@ export default function RegisterAssetPage() {
         model: "",
         expiryDate: "",
         allocatedTo: "",
-        quantity: "",
+        quantity: "1",
         minStockLevel: "",
         unit: "",
       })
@@ -471,47 +471,49 @@ export default function RegisterAssetPage() {
                 </div>
               </div>
 
-              {formData.type === AssetType.CONSUMABLE && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-900 mb-2">
-                      Quantity *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      value={formData.quantity}
-                      onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-900 mb-2">
-                      Min Stock Level
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={formData.minStockLevel}
-                      onChange={(e) => setFormData({ ...formData, minStockLevel: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-900 mb-2">
-                      Unit
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.unit}
-                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                      placeholder="e.g., boxes, units, liters"
-                      className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium shadow-sm"
-                    />
-                  </div>
+              {/* Quantity fields - now available for all asset types */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={formData.quantity || "1"}
+                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium shadow-sm"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">Total number of units</p>
                 </div>
-              )}
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Min Stock Level
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.minStockLevel}
+                    onChange={(e) => setFormData({ ...formData, minStockLevel: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium shadow-sm"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">Alert when stock falls below this</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Unit
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.unit}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                    placeholder="e.g., pieces, units, boxes"
+                    className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium shadow-sm"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">Unit of measurement</p>
+                </div>
+              </div>
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">
