@@ -39,11 +39,19 @@ export default function LecturerRequestPage() {
 
     try {
       const res = await fetch(`/api/assets?${params.toString()}`)
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        const errorMessage = errorData.error || errorData.details || res.statusText
+        throw new Error(`Failed to fetch assets: ${errorMessage}`)
+      }
       const data = await res.json()
-      setAssets(data)
+      // Ensure data is always an array
+      setAssets(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error("Error fetching assets:", error)
-      setMessage({ type: "error", text: "Failed to load available assets" })
+      const errorMessage = error instanceof Error ? error.message : "Failed to load available assets"
+      setMessage({ type: "error", text: errorMessage })
+      setAssets([]) // Set empty array on error
     } finally {
       setLoading(false)
     }
@@ -150,11 +158,24 @@ export default function LecturerRequestPage() {
                   className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-bold shadow-sm"
                 >
                   <option value="">-- Select an asset --</option>
-                  {assets.map((asset) => (
-                    <option key={asset.id} value={asset.id}>
-                      {asset.name} ({asset.assetCode}) - {asset.type}
-                    </option>
-                  ))}
+                  {Array.isArray(assets) && assets
+                    .filter((asset) => {
+                      const totalQty = asset.quantity ?? 1
+                      const allocatedQty = asset.allocatedQuantity ?? 0
+                      const availableQty = totalQty - allocatedQty
+                      return availableQty > 0
+                    })
+                    .map((asset) => {
+                      const totalQty = asset.quantity ?? 1
+                      const allocatedQty = asset.allocatedQuantity ?? 0
+                      const availableQty = totalQty - allocatedQty
+                      const typeDisplay = asset.type.replace(/_/g, " ")
+                      return (
+                        <option key={asset.id} value={asset.id}>
+                          {asset.name} ({asset.assetCode}) - {typeDisplay} - Available: {availableQty} {asset.unit || "units"}
+                        </option>
+                      )
+                    })}
                 </select>
               </div>
 
@@ -266,7 +287,7 @@ export default function LecturerRequestPage() {
               <div className="flex justify-center items-center py-12">
                 <LoadingSpinner size="lg" text="Loading assets..." />
               </div>
-            ) : assets.length === 0 ? (
+            ) : !Array.isArray(assets) || assets.length === 0 ? (
               <div className="p-8 border-2 border-gray-300 rounded-lg text-center text-gray-700 font-medium">
                 <p>No available assets found.</p>
               </div>

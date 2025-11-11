@@ -26,13 +26,13 @@ export async function POST(
 
     const request = await prisma.request.findUnique({
       where: { id },
-      include: { 
+      include: {
         asset: true,
         requestedByUser: {
           select: { name: true, email: true }
         }
       }
-    })
+    }) as any
 
     if (!request) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 })
@@ -57,6 +57,9 @@ export async function POST(
       }, { status: 400 })
     }
 
+    const requestedQuantity = request.requestedQuantity ?? 1
+    const currentAllocated = request.asset.allocatedQuantity ?? 0
+
     const updatedRequest = await prisma.$transaction(async (tx) => {
       const req = await tx.request.update({
         where: { id },
@@ -67,9 +70,6 @@ export async function POST(
           returnNotes
         }
       })
-
-      const requestedQuantity = request.requestedQuantity ?? 1
-      const currentAllocated = request.asset.allocatedQuantity ?? 0
       
       // Update asset based on return condition
       let assetStatus: AssetStatus = AssetStatus.AVAILABLE
@@ -85,7 +85,7 @@ export async function POST(
             quantity: Math.max(0, currentQuantity - quantityToReduce),
             allocatedQuantity: Math.max(0, currentAllocated - quantityToReduce),
             status: AssetStatus.RETIRED // Mark as retired if all lost
-          }
+          } as any
         })
       } else if (returnCondition === "DAMAGED" || returnCondition === "NEEDS_REPAIR") {
         // Damaged items: reduce allocated, but don't make available (needs repair)
@@ -96,7 +96,7 @@ export async function POST(
           data: {
             allocatedQuantity: newAllocatedQuantity,
             status: assetStatus
-          }
+          } as any
         })
       } else {
         // Functional/Good returns: reduce allocated, make available
@@ -110,36 +110,43 @@ export async function POST(
             allocatedQuantity: newAllocatedQuantity,
             allocatedTo: newAllocatedQuantity > 0 ? request.requestedBy : null, // Clear if all returned
             status: availableQuantity > 0 ? AssetStatus.AVAILABLE : AssetStatus.ALLOCATED
-          }
+          } as any
         })
       }
 
-      // Create notification for officers/admins about the return
-      const officers = await tx.user.findMany({
-        where: {
-          role: {
-            in: ["DEPARTMENTAL_OFFICER", "FACULTY_ADMIN"]
-          }
-        }
-      })
-
-      await Promise.all(
-        officers.map(officer =>
-          tx.notification.create({
-            data: {
-              userId: officer.id,
-              type: "ASSET_RETURNED",
-              title: "Asset Returned",
-              message: `${request.requestedByUser.name} returned ${requestedQuantity} unit(s) of "${request.asset.name}". Condition: ${returnCondition}`,
-              relatedRequestId: id,
-              relatedAssetId: request.assetId
-            }
-          })
-        )
-      )
-
+      // Notifications will be created outside the transaction to avoid timeout
       return req
+    }, {
+      maxWait: 10000, // Maximum time to wait for a transaction slot (10 seconds)
+      timeout: 15000, // Maximum time the transaction can run (15 seconds)
     })
+
+    // Create notification for officers/admins about the return (outside transaction)
+    const officers = await prisma.user.findMany({
+      where: {
+        role: {
+          in: ["DEPARTMENTAL_OFFICER", "FACULTY_ADMIN"]
+        }
+      },
+      select: { id: true }
+    })
+
+    // Create notifications in batch (non-blocking)
+    if (officers.length > 0) {
+      const requestedQuantity = request.requestedQuantity ?? 1
+      prisma.notification.createMany({
+        data: officers.map(officer => ({
+          userId: officer.id,
+          type: "ASSET_RETURNED",
+          title: "Asset Returned",
+          message: `${request.requestedByUser.name} returned ${requestedQuantity} unit(s) of "${request.asset.name}". Condition: ${returnCondition}`,
+          relatedRequestId: id,
+          relatedAssetId: request.assetId
+        }))
+      }).catch(err => {
+        console.error("Error creating return notifications:", err)
+      })
+    }
 
     return NextResponse.json(updatedRequest)
   } catch (error) {

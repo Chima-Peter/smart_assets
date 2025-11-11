@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma"
 import { hasPermission } from "@/lib/rbac"
 import { z } from "zod"
 import { AssetType, AssetStatus } from "@/lib/prisma/enums"
-import type { AssetUncheckedUpdateInput } from "@/lib/prisma/models/Asset"
 import { logActivity } from "@/lib/activity-log"
 
 const updateAssetSchema = z.object({
@@ -89,7 +88,7 @@ export async function PATCH(
     }
 
     // Prepare update data
-    const updateData: Partial<AssetUncheckedUpdateInput> = {}
+    const updateData: Record<string, any> = {}
     if (data.name) updateData.name = data.name
     if (data.description !== undefined) updateData.description = data.description
     if (data.type) updateData.type = data.type

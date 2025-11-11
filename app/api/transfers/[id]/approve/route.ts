@@ -24,12 +24,12 @@ export async function POST(
     const { id } = await params
     const transfer = await prisma.transfer.findUnique({
       where: { id },
-      include: { 
+      include: {
         asset: true,
         fromUser: { select: { name: true, email: true, department: true } },
         toUser: { select: { name: true, email: true, department: true } }
       }
-    })
+    }) as any
 
     if (!transfer) {
       return NextResponse.json({ error: "Transfer not found" }, { status: 404 })
@@ -39,15 +39,28 @@ export async function POST(
       return NextResponse.json({ error: "Transfer is not pending" }, { status: 400 })
     }
 
-    // Check permissions - ALL transfers must be approved by Faculty Admin only
+    // Only inter-departmental transfers require faculty admin approval
+    // Intra-departmental transfers are auto-approved
+    if (transfer.transferType === "INTRA_DEPARTMENTAL") {
+      return NextResponse.json({ 
+        error: "Intra-departmental transfers are auto-approved and do not require manual approval." 
+      }, { status: 400 })
+    }
+
+    // Check permissions - Only inter-departmental transfers must be approved by Faculty Admin
     if (!hasPermission(session.user.role, "APPROVE_TRANSFERS")) {
       return NextResponse.json({ 
-        error: "Forbidden. Only Faculty Admins can approve or reject transfers." 
+        error: "Forbidden. Only Faculty Admins can approve or reject inter-departmental transfers." 
       }, { status: 403 })
     }
 
     const body = await req.json()
     const { status, comments } = approveSchema.parse(body)
+
+    // Generate receipt number once (only used if approved)
+    const receiptNumber = status === "APPROVED" 
+      ? `TRF-${Date.now()}-${id.substring(0, 6).toUpperCase()}`
+      : null
 
     const updatedTransfer = await prisma.$transaction(async (tx) => {
       const tr = await tx.transfer.update({
@@ -73,9 +86,6 @@ export async function POST(
       })
 
       if (status === "APPROVED") {
-        // Generate receipt number
-        const receiptNumber = `TRF-${Date.now()}-${id.substring(0, 6).toUpperCase()}`
-
         const transferQuantity = transfer.transferQuantity ?? 1
         const currentAllocated = transfer.asset.allocatedQuantity ?? 0
         const totalQuantity = transfer.asset.quantity ?? 1
@@ -113,7 +123,7 @@ export async function POST(
             status: newStatus,
             // Update location to recipient's department if available (not for transfers back)
             location: isTransferBack ? undefined : (tr.toUser.department || undefined)
-          },
+          } as any,
           include: {
             allocatedToUser: {
               select: { name: true, email: true }
@@ -134,36 +144,9 @@ export async function POST(
           data: updateData as Parameters<typeof tx.transfer.update>[0]['data']
         })
 
-        // Create notifications
-        const notifications = [
-          // Notify recipient
-          tx.notification.create({
-            data: {
-              userId: transfer.toUserId,
-              type: "TRANSFER_APPROVED",
-              title: "Asset Transfer Approved",
-              message: transfer.fromUserId 
-                ? `Transfer of ${transferQuantity} unit(s) of "${tr.asset.name}" from ${tr.fromUser?.name || "Officer"} has been approved. Receipt: ${receiptNumber}`
-                : `Transfer of ${transferQuantity} unit(s) of "${tr.asset.name}" from Officer has been approved. Receipt: ${receiptNumber}`,
-            }
-          })
-        ]
-
-        // Only notify sender if transfer is from a user (not officer-to-lecturer)
-        if (transfer.fromUserId) {
-          notifications.push(
-            tx.notification.create({
-              data: {
-                userId: transfer.fromUserId,
-                type: "TRANSFER_APPROVED",
-                title: "Asset Transfer Approved",
-                message: `Transfer of ${transferQuantity} unit(s) of "${tr.asset.name}" to ${tr.toUser.name} has been approved. Receipt: ${receiptNumber}`,
-              }
-            })
-          )
-        }
-
-        await Promise.all(notifications)
+        // Fetch all parties to notify (outside transaction for better performance)
+        // We'll create notifications after the transaction completes
+        // This is done outside the transaction to avoid timeout issues
 
         // Get IP and user agent for activity logs (within transaction context)
         const headersList = await headers()
@@ -262,37 +245,155 @@ export async function POST(
           }
         })
 
-        // Notify all parties about rejection
-        const rejectNotifications = [
-          tx.notification.create({
-            data: {
-              userId: transfer.toUserId,
-              type: "TRANSFER_REJECTED",
-              title: "Asset Transfer Rejected",
-              message: `Transfer of "${tr.asset.name}" has been rejected.${comments ? ` Reason: ${comments}` : ""}`,
-            }
-          })
-        ]
-
-        // Only notify sender if transfer is from a user
-        if (transfer.fromUserId) {
-          rejectNotifications.push(
-            tx.notification.create({
-              data: {
-                userId: transfer.fromUserId,
-                type: "TRANSFER_REJECTED",
-                title: "Asset Transfer Rejected",
-                message: `Transfer of "${tr.asset.name}" to ${tr.toUser.name} has been rejected.${comments ? ` Reason: ${comments}` : ""}`,
-              }
-            })
-          )
-        }
-
-        await Promise.all(rejectNotifications)
+        // Notifications will be created outside the transaction
       }
 
       return tr
+    }, {
+      maxWait: 10000, // Maximum time to wait for a transaction slot (10 seconds)
+      timeout: 15000, // Maximum time the transaction can run (15 seconds)
     })
+
+    // Create notifications outside transaction for only the parties directly involved
+    // Fetch only the parties directly involved in the transfer
+    const [admins, initiator, fromUser, toUser] = await Promise.all([
+      prisma.user.findMany({
+        where: { role: UserRole.FACULTY_ADMIN },
+        select: { id: true, name: true }
+      }),
+      prisma.user.findUnique({
+        where: { id: transfer.initiatedBy },
+        select: { id: true, name: true, role: true, department: true }
+      }),
+      transfer.fromUserId ? prisma.user.findUnique({
+        where: { id: transfer.fromUserId },
+        select: { id: true, name: true }
+      }) : Promise.resolve(null),
+      prisma.user.findUnique({
+        where: { id: transfer.toUserId },
+        select: { id: true, name: true, role: true }
+      })
+    ])
+
+    const transferQuantity = transfer.transferQuantity ?? 1
+    const approvedByName = session.user.name || "Admin"
+    const assetName = updatedTransfer.asset.name
+    const assetCode = updatedTransfer.asset.assetCode
+    const fromUserName = updatedTransfer.fromUser?.name || "Stock/Officer"
+    const toUserName = updatedTransfer.toUser.name
+
+    // Prepare notifications for all parties
+    const notificationsToCreate = []
+
+    if (status === "APPROVED" && receiptNumber) {
+      // Notify all Faculty Admins (except the one who approved)
+      notificationsToCreate.push(
+        ...admins
+          .filter(admin => admin.id !== session.user.id)
+          .map(admin => ({
+            userId: admin.id,
+            type: "TRANSFER_APPROVED",
+            title: "Transfer Approved",
+            message: `${approvedByName} approved a transfer of ${transferQuantity} unit(s) of "${assetName}" (${assetCode}) from ${fromUserName} to ${toUserName}. Receipt: ${receiptNumber}`,
+            relatedAssetId: transfer.assetId
+          }))
+      )
+
+      // Notify initiator (Departmental Officer who initiated)
+      if (initiator && initiator.role === UserRole.DEPARTMENTAL_OFFICER) {
+        notificationsToCreate.push({
+          userId: initiator.id,
+          type: "TRANSFER_APPROVED",
+          title: "Transfer Approved",
+          message: `Your transfer of ${transferQuantity} unit(s) of "${assetName}" (${assetCode}) from ${fromUserName} to ${toUserName} has been approved by ${approvedByName}. Receipt: ${receiptNumber}`,
+          relatedAssetId: transfer.assetId,
+          relatedTransferId: id
+        })
+      }
+
+      // Notify sender lecturer (if transfer is from a lecturer)
+      if (fromUser) {
+        notificationsToCreate.push({
+          userId: fromUser.id,
+          type: "TRANSFER_APPROVED",
+          title: "Asset Transfer Approved",
+          message: `Transfer of ${transferQuantity} unit(s) of "${assetName}" (${assetCode}) from you to ${toUserName} has been approved by ${approvedByName}. Receipt: ${receiptNumber}`,
+          relatedAssetId: transfer.assetId,
+          relatedTransferId: id
+        })
+      }
+
+      // Notify recipient lecturer (if recipient is a lecturer)
+      if (toUser && toUser.role === UserRole.LECTURER) {
+        notificationsToCreate.push({
+          userId: toUser.id,
+          type: "TRANSFER_APPROVED",
+          title: "Asset Transfer Approved",
+          message: `Transfer of ${transferQuantity} unit(s) of "${assetName}" (${assetCode}) from ${fromUserName} to you has been approved by ${approvedByName}. Receipt: ${receiptNumber}`,
+          relatedAssetId: transfer.assetId,
+          relatedTransferId: id
+        })
+      }
+    } else {
+      // REJECTED - notify only the parties directly involved
+      // Notify all Faculty Admins (except the one who rejected)
+      notificationsToCreate.push(
+        ...admins
+          .filter(admin => admin.id !== session.user.id)
+          .map(admin => ({
+            userId: admin.id,
+            type: "TRANSFER_REJECTED",
+            title: "Transfer Rejected",
+            message: `${approvedByName} rejected a transfer of "${assetName}" (${assetCode}) from ${fromUserName} to ${toUserName}.${comments ? ` Reason: ${comments}` : ""}`,
+            relatedAssetId: transfer.assetId
+          }))
+      )
+
+      // Notify initiator
+      if (initiator && initiator.role === UserRole.DEPARTMENTAL_OFFICER) {
+        notificationsToCreate.push({
+          userId: initiator.id,
+          type: "TRANSFER_REJECTED",
+          title: "Transfer Rejected",
+          message: `Your transfer of "${assetName}" (${assetCode}) from ${fromUserName} to ${toUserName} has been rejected by ${approvedByName}.${comments ? ` Reason: ${comments}` : ""}`,
+          relatedAssetId: transfer.assetId,
+          relatedTransferId: id
+        })
+      }
+
+      // Notify sender lecturer
+      if (fromUser) {
+        notificationsToCreate.push({
+          userId: fromUser.id,
+          type: "TRANSFER_REJECTED",
+          title: "Asset Transfer Rejected",
+          message: `Transfer of "${assetName}" (${assetCode}) from you to ${toUserName} has been rejected by ${approvedByName}.${comments ? ` Reason: ${comments}` : ""}`,
+          relatedAssetId: transfer.assetId,
+          relatedTransferId: id
+        })
+      }
+
+      // Notify recipient lecturer
+      if (toUser && toUser.role === UserRole.LECTURER) {
+        notificationsToCreate.push({
+          userId: toUser.id,
+          type: "TRANSFER_REJECTED",
+          title: "Asset Transfer Rejected",
+          message: `Transfer of "${assetName}" (${assetCode}) from ${fromUserName} to you has been rejected by ${approvedByName}.${comments ? ` Reason: ${comments}` : ""}`,
+          relatedAssetId: transfer.assetId,
+          relatedTransferId: id
+        })
+      }
+    }
+
+    // Create all notifications in batch (non-blocking)
+    if (notificationsToCreate.length > 0) {
+      prisma.notification.createMany({
+        data: notificationsToCreate
+      }).catch(err => {
+        console.error("Error creating transfer approval notifications:", err)
+      })
+    }
 
     return NextResponse.json(updatedTransfer)
   } catch (error) {

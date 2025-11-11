@@ -15,10 +15,15 @@ export default function BarcodeScanner({ onScan, onError, onClose }: BarcodeScan
   const [error, setError] = useState<string | null>(null)
 
   const stopScanning = useCallback(async () => {
-    if (scannerRef.current && isScanning) {
+    if (scannerRef.current) {
       try {
-        await scannerRef.current.stop()
+        // Stop scanning regardless of isScanning state
+        if (isScanning) {
+          await scannerRef.current.stop()
+        }
         await scannerRef.current.clear()
+        // Destroy the scanner instance to fully release camera
+        scannerRef.current = null
       } catch (err) {
         console.error("Error stopping scanner:", err)
       }

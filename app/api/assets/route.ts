@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 
     // Course Rep can only view available consumables and teaching aids
     if (role === UserRole.COURSE_REP) {
-      const assets = await prisma.asset.findMany({
+      const assets = await (prisma.asset.findMany as any)({
         where: {
           status: AssetStatus.AVAILABLE,
           type: {
@@ -69,11 +69,15 @@ export async function GET(req: NextRequest) {
     if (status) where.status = status as AssetStatus
     
     // Lecturers can only see assets allocated to them when status is ALLOCATED
+    // And they must have at least 1 quantity available
     if (role === UserRole.LECTURER && status === AssetStatus.ALLOCATED) {
       where.allocatedTo = session.user.id
+      // Ensure lecturer has at least 1 quantity
+      // For assets allocated to lecturer, we assume they have the allocatedQuantity
+      // We'll filter in the result to ensure allocatedQuantity >= 1
     }
 
-    const assets = await prisma.asset.findMany({
+    const assets = await (prisma.asset.findMany as any)({
       where,
       include: {
         registeredByUser: {
@@ -86,10 +90,28 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" }
     })
 
+    // For lecturers viewing ALLOCATED assets, filter to only show assets where they have at least 1 quantity
+    if (role === UserRole.LECTURER && status === AssetStatus.ALLOCATED) {
+      const filteredAssets = assets.filter((asset: any) => {
+        // Lecturer must have at least 1 allocated quantity
+        const allocatedQty = asset.allocatedQuantity ?? 0
+        return allocatedQty >= 1
+      })
+      return NextResponse.json(filteredAssets)
+    }
+
     return NextResponse.json(assets)
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching assets:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error details:", {
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta
+    })
+    return NextResponse.json({ 
+      error: "Internal server error",
+      details: process.env.NODE_ENV === "development" ? error?.message : undefined
+    }, { status: 500 })
   }
 }
 
@@ -120,6 +142,13 @@ export async function POST(req: NextRequest) {
            const quantity = data.quantity ?? 1
            const allocatedQuantity = data.allocatedTo ? quantity : 0
            
+           // If registered by departmental officer, require faculty admin approval
+           // If registered by faculty admin, auto-approve
+           const requiresApproval = session.user.role === UserRole.DEPARTMENTAL_OFFICER
+           const initialStatus = requiresApproval 
+             ? AssetStatus.PENDING_APPROVAL 
+             : (data.allocatedTo ? AssetStatus.ALLOCATED : AssetStatus.AVAILABLE)
+           
            const asset = await prisma.asset.create({
              data: {
                name: data.name,
@@ -143,7 +172,7 @@ export async function POST(req: NextRequest) {
                unit: data.unit ?? (data.type === AssetType.CONSUMABLE ? "units" : "pieces"),
                registeredBy: session.user.id,
                allocatedTo: data.allocatedTo ?? null,
-               status: data.allocatedTo ? AssetStatus.ALLOCATED : AssetStatus.AVAILABLE
+               status: initialStatus
              } as any,
       include: {
         registeredByUser: {
@@ -161,13 +190,42 @@ export async function POST(req: NextRequest) {
              action: "CREATE",
              entityType: "ASSET",
              entityId: asset.id,
-             description: `Registered new asset: ${asset.name} (${asset.assetCode})`,
+             description: `Registered new asset: ${asset.name} (${asset.assetCode})${requiresApproval ? " - Pending faculty approval" : ""}`,
            })
+
+           // Notify faculty admins if approval is required
+           if (requiresApproval) {
+             const admins = await prisma.user.findMany({
+               where: { role: UserRole.FACULTY_ADMIN },
+               select: { id: true }
+             })
+
+             await Promise.all(
+               admins.map(admin =>
+                 prisma.notification.create({
+                   data: {
+                     userId: admin.id,
+                     type: "REQUEST_APPROVED", // Reusing notification type
+                     title: "Asset Registration Pending Approval",
+                     message: `${session.user.name} registered a new asset "${asset.name}" (${asset.assetCode}). Requires faculty approval.`,
+                     relatedAssetId: asset.id
+                   }
+                 })
+               )
+             )
+           }
 
            return NextResponse.json(asset, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 })
+      // Format Zod validation errors into a readable message
+      const errorMessages = error.issues.map(issue => {
+        const path = issue.path.join(".")
+        return `${path ? `${path}: ` : ""}${issue.message}`
+      })
+      return NextResponse.json({ 
+        error: errorMessages.join("; ") 
+      }, { status: 400 })
     }
     console.error("Error creating asset:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

@@ -25,6 +25,7 @@ enum AssetStatus {
   MAINTENANCE
   RETIRED
   TRANSFER_PENDING
+  PENDING_APPROVAL
 }
 
 enum AssetType {

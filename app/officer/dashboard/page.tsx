@@ -74,6 +74,12 @@ export default function OfficerDashboard() {
           <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <Link
+              href="/officer/assets"
+              className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
+            >
+              View Assets
+            </Link>
+            <Link
               href="/officer/register"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
@@ -90,6 +96,24 @@ export default function OfficerDashboard() {
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               Manage Transfers
+            </Link>
+            <Link
+              href="/officer/activity-logs"
+              className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
+            >
+              Activity Logs
+            </Link>
+            <Link
+              href="/notifications"
+              className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
+            >
+              Notifications
+            </Link>
+            <Link
+              href="/officer/reports"
+              className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
+            >
+              Generate Reports
             </Link>
           </div>
         </div>

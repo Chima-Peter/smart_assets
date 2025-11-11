@@ -77,10 +77,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Check permissions for initiating transfers
-    // Officers/Admins can initiate any transfers, Lecturers can only transfer assets they have
-    if (!hasPermission(session.user.role, "INITIATE_TRANSFERS") && 
-        !hasPermission(session.user.role, "TRANSFER_OWN_ASSETS")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    // Only Departmental Officers and Faculty Admins can initiate transfers
+    if (!hasPermission(session.user.role, "INITIATE_TRANSFERS")) {
+      return NextResponse.json({ 
+        error: "Forbidden. Only Departmental Officers and Faculty Admins can initiate transfers." 
+      }, { status: 403 })
     }
 
     const body = await req.json()
@@ -100,32 +101,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 })
     }
 
-    // If lecturer is initiating transfer, they must own the asset
-    if (session.user.role === UserRole.LECTURER) {
-      if (!asset.allocatedTo || asset.allocatedTo !== session.user.id) {
+    const assetAny = asset as any
+
+    // Only officers/admins can initiate transfers - check available quantity
+    const totalQuantity = assetAny.quantity ?? 1
+    const allocatedQuantity = assetAny.allocatedQuantity ?? 0
+    const availableQuantity = totalQuantity - allocatedQuantity
+
+    // If transferring from a lecturer (fromUserId provided), check if that lecturer has enough
+    if (data.fromUserId) {
+      // Check if the fromUser actually has this asset allocated
+      if (assetAny.allocatedTo !== data.fromUserId) {
         return NextResponse.json({ 
-          error: "You can only transfer assets that are allocated to you" 
-        }, { status: 403 })
+          error: "The specified sender does not have this asset allocated" 
+        }, { status: 400 })
       }
       
-      // Check if lecturer has enough allocated quantity
-      // For lecturers, we need to check how much they actually have allocated
-      // This is a simplified check - in reality, we'd need to track per-user allocations
-      const totalQuantity = asset.quantity ?? 1
-      const allocatedQuantity = asset.allocatedQuantity ?? 0
-      
-      // If all quantity is allocated and lecturer has it, they can transfer up to allocatedQuantity
+      // For transfers from lecturers, we need to check their allocated quantity
+      // Since we track allocatedQuantity at asset level, we'll validate based on the transfer quantity
       if (data.transferQuantity > allocatedQuantity) {
         return NextResponse.json({ 
-          error: `Insufficient quantity. You have ${allocatedQuantity} unit(s) allocated, but requested ${data.transferQuantity}` 
+          error: `Insufficient quantity. Allocated: ${allocatedQuantity}, Requested: ${data.transferQuantity}` 
         }, { status: 400 })
       }
     } else {
-      // For officers/admins, check available quantity
-      const totalQuantity = asset.quantity ?? 1
-      const allocatedQuantity = asset.allocatedQuantity ?? 0
-      const availableQuantity = totalQuantity - allocatedQuantity
-
+      // Transfer from available stock - check available quantity
       if (availableQuantity < data.transferQuantity) {
         return NextResponse.json({ 
           error: `Insufficient quantity. Available: ${availableQuantity}, Requested: ${data.transferQuantity}` 
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
           role: {
             in: [UserRole.DEPARTMENTAL_OFFICER, UserRole.FACULTY_ADMIN]
           },
-          ...(session.user.department ? { department: session.user.department } : {})
+          ...((session.user as any).department ? { department: (session.user as any).department } : {})
         },
         take: 1,
         select: { id: true, department: true, role: true }
@@ -161,49 +161,60 @@ export async function POST(req: NextRequest) {
       // Update toUserId to the officer's ID
       data.toUserId = officers[0].id
     } else {
-      toUser = await prisma.user.findUnique({
+      const recipientUser = await prisma.user.findUnique({
         where: { id: data.toUserId },
         select: { department: true, role: true }
       })
 
-      if (!toUser) {
+      if (!recipientUser) {
         return NextResponse.json({ error: "Recipient user not found" }, { status: 404 })
+      }
+
+      toUser = recipientUser
+
+      // Prevent transfers to course reps
+      if (toUser.role === UserRole.COURSE_REP) {
+        return NextResponse.json({ 
+          error: "Course representatives cannot receive asset transfers" 
+        }, { status: 400 })
       }
     }
 
     // Determine fromUserId
+    // Only officers can initiate transfers, so fromUserId comes from the request or asset allocation
     let fromUserId: string | null = null
-    if (session.user.role === UserRole.LECTURER) {
-      // Lecturer transferring their own asset
-      fromUserId = session.user.id
-    } else if (data.fromUserId) {
-      // Officer specifying a from user (lecturer to lecturer)
+    if (data.fromUserId) {
+      // Officer specifying a from user (lecturer to lecturer transfer)
       fromUserId = data.fromUserId
     } else if (asset.allocatedTo) {
-      // Transfer from current allocated user
+      // Transfer from current allocated user (if asset is already allocated)
       fromUserId = asset.allocatedTo
     }
     // If fromUserId is still null, it's an officer-to-lecturer transfer (from available stock)
 
     // Determine transfer type
-    const fromDepartment = fromUserId ? asset.allocatedToUser?.department : null
+    const fromDepartment = fromUserId ? assetAny.allocatedToUser?.department : null
     const toDepartment = toUser.department
-    const transferType = (fromDepartment && toDepartment && fromDepartment === toDepartment) 
-      ? "INTRA_DEPARTMENTAL" 
-      : "INTER_DEPARTMENTAL"
+    const isIntraDepartmental = fromDepartment && toDepartment && fromDepartment === toDepartment
+    const transferType = isIntraDepartmental ? "INTRA_DEPARTMENTAL" : "INTER_DEPARTMENTAL"
+
+    // For intra-departmental transfers, auto-approve (set status to APPROVED)
+    // For inter-departmental transfers, require faculty admin approval (set status to PENDING)
+    const initialStatus = isIntraDepartmental ? TransferStatus.APPROVED : TransferStatus.PENDING
 
     const transfer = await prisma.transfer.create({
       data: {
         assetId: data.assetId,
-        fromUserId: fromUserId,
+        fromUserId: fromUserId ?? undefined,
         toUserId: data.toUserId,
         transferQuantity: data.transferQuantity,
         reason: data.reason,
         notes: data.notes,
         initiatedBy: session.user.id,
         transferType,
-        status: TransferStatus.PENDING
-      },
+        status: initialStatus,
+        approvedAt: isIntraDepartmental ? new Date() : null
+      } as any,
       include: {
         asset: true,
         fromUser: {
@@ -215,33 +226,147 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // Update asset status to transfer pending (don't change quantity yet - wait for approval)
-    await prisma.asset.update({
-      where: { id: data.assetId },
-      data: { status: AssetStatus.TRANSFER_PENDING }
-    })
+    // If intra-departmental, auto-approve and update asset immediately
+    // If inter-departmental, set status to pending and wait for approval
+    if (isIntraDepartmental) {
+      // Auto-approve intra-departmental transfers
+      const transferQuantity = data.transferQuantity
+      const currentAllocated = assetAny.allocatedQuantity ?? 0
+      const totalQuantity = assetAny.quantity ?? 1
+      
+      // Check if this is a transfer back to stock
+      const isTransferBack = fromUserId && 
+                            (toUser.role === UserRole.DEPARTMENTAL_OFFICER || toUser.role === UserRole.FACULTY_ADMIN)
+      
+      let newAllocatedQuantity: number
+      let newStatus: AssetStatus
+      let allocatedTo: string | null
+      
+      if (isTransferBack) {
+        // Transfer back to stock: reduce allocated quantity
+        newAllocatedQuantity = Math.max(0, currentAllocated - transferQuantity)
+        const availableQuantity = totalQuantity - newAllocatedQuantity
+        newStatus = availableQuantity > 0 ? AssetStatus.AVAILABLE : AssetStatus.ALLOCATED
+        allocatedTo = newAllocatedQuantity > 0 ? fromUserId : null
+      } else {
+        // Normal transfer: increase allocated quantity
+        newAllocatedQuantity = currentAllocated + transferQuantity
+        const availableQuantity = totalQuantity - newAllocatedQuantity
+        newStatus = availableQuantity <= 0 ? AssetStatus.ALLOCATED : AssetStatus.AVAILABLE
+        allocatedTo = data.toUserId
+      }
 
-    // Create notification for ALL Faculty Admins (all transfers require admin approval)
-    const admins = await prisma.user.findMany({
-      where: { role: UserRole.FACULTY_ADMIN }
-    })
+      // Update asset immediately for intra-departmental transfers
+      await prisma.asset.update({
+        where: { id: data.assetId },
+        data: {
+          allocatedQuantity: newAllocatedQuantity,
+          allocatedTo: allocatedTo,
+          status: newStatus,
+          location: isTransferBack ? undefined : (toUser.department || undefined)
+        } as any
+      })
 
+      // Create approval record for auto-approved transfer
+      await prisma.approval.create({
+        data: {
+          transferId: transfer.id,
+          approvedBy: session.user.id, // Officer who initiated
+          status: "APPROVED",
+          comments: "Auto-approved: Intra-departmental transfer"
+        }
+      })
+
+      // Update transfer with completion
+      await prisma.transfer.update({
+        where: { id: transfer.id },
+        data: {
+          completedAt: new Date(),
+          receiptNumber: `TRF-${Date.now()}-${transfer.id.substring(0, 6).toUpperCase()}`,
+          receiptGeneratedAt: new Date()
+        } as any
+      })
+    } else {
+      // Inter-departmental: set status to pending and wait for approval
+      await prisma.asset.update({
+        where: { id: data.assetId },
+        data: { status: AssetStatus.TRANSFER_PENDING }
+      } as any)
+    }
+
+    // Notify all parties involved in the transfer
     const fromUserName = transfer.fromUser?.name || "Stock/Officer"
     const toUserName = transfer.toUser.name
+    const transferQuantity = (transfer as any).transferQuantity ?? 1
+    const initiatedByName = session.user.name || "Officer"
 
-    await Promise.all(
-      admins.map(admin =>
-        prisma.notification.create({
-          data: {
-            userId: admin.id,
-            type: "TRANSFER_PENDING",
-            title: "Transfer Request Pending Approval",
-            message: `${session.user.name || "User"} initiated a ${transferType.toLowerCase().replace("_", "-")} transfer of ${transfer.transferQuantity} unit(s) of "${asset.name}" (${asset.assetCode}) from ${fromUserName} to ${toUserName}. Requires admin approval.`,
-            relatedAssetId: asset.id
-          }
-        })
+    // Fetch only the parties directly involved in the transfer
+    const [admins, fromUserForNotification, toUserForNotification] = await Promise.all([
+      // Only fetch admins for inter-departmental transfers
+      isIntraDepartmental ? Promise.resolve([]) : prisma.user.findMany({
+        where: { role: UserRole.FACULTY_ADMIN },
+        select: { id: true }
+      }),
+      transfer.fromUserId ? prisma.user.findUnique({
+        where: { id: transfer.fromUserId },
+        select: { id: true, name: true }
+      }) : Promise.resolve(null),
+      prisma.user.findUnique({
+        where: { id: transfer.toUserId },
+        select: { id: true, name: true, role: true }
+      })
+    ])
+
+    // Prepare notifications for only the parties directly involved
+    const notificationsToCreate = []
+
+    // Notify Faculty Admins only for inter-departmental transfers (for approval)
+    if (!isIntraDepartmental) {
+      notificationsToCreate.push(
+        ...admins.map(admin => ({
+          userId: admin.id,
+          type: "TRANSFER_PENDING",
+          title: "Transfer Request Pending Approval",
+          message: `${initiatedByName} initiated an inter-departmental transfer of ${transferQuantity} unit(s) of "${assetAny.name}" (${assetAny.assetCode}) from ${fromUserName} to ${toUserName}. Requires admin approval.`,
+          relatedAssetId: asset.id
+        }))
       )
-    )
+    }
+
+    // Notify sender lecturer (if transfer is from a lecturer)
+    if (fromUserForNotification) {
+      notificationsToCreate.push({
+        userId: fromUserForNotification.id,
+        type: isIntraDepartmental ? "TRANSFER_APPROVED" : "TRANSFER_PENDING",
+        title: isIntraDepartmental ? "Asset Transfer Completed" : "Asset Transfer Initiated",
+        message: isIntraDepartmental
+          ? `${initiatedByName} completed an intra-departmental transfer of ${transferQuantity} unit(s) of "${assetAny.name}" (${assetAny.assetCode}) from you to ${toUserName}.`
+          : `${initiatedByName} initiated a transfer of ${transferQuantity} unit(s) of "${assetAny.name}" (${assetAny.assetCode}) from you to ${toUserName}. Pending admin approval.`,
+        relatedAssetId: asset.id
+      })
+    }
+
+    // Notify recipient lecturer (if recipient is a lecturer)
+    if (toUserForNotification && toUserForNotification.role === UserRole.LECTURER) {
+      notificationsToCreate.push({
+        userId: toUserForNotification.id,
+        type: isIntraDepartmental ? "TRANSFER_APPROVED" : "TRANSFER_PENDING",
+        title: isIntraDepartmental ? "Asset Transfer Completed" : "Asset Transfer Initiated",
+        message: isIntraDepartmental
+          ? `${initiatedByName} completed an intra-departmental transfer of ${transferQuantity} unit(s) of "${assetAny.name}" (${assetAny.assetCode}) from ${fromUserName} to you.`
+          : `${initiatedByName} initiated a transfer of ${transferQuantity} unit(s) of "${assetAny.name}" (${assetAny.assetCode}) from ${fromUserName} to you. Pending admin approval.`,
+        relatedAssetId: asset.id
+      })
+    }
+
+    // Create all notifications in batch (non-blocking)
+    if (notificationsToCreate.length > 0) {
+      prisma.notification.createMany({
+        data: notificationsToCreate
+      }).catch(err => {
+        console.error("Error creating transfer initiation notifications:", err)
+      })
+    }
 
     return NextResponse.json(transfer, { status: 201 })
   } catch (error) {

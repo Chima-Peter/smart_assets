@@ -90,10 +90,34 @@ export default function AdminDashboard() {
               Approve Transfers
             </Link>
             <Link
+              href="/admin/users"
+              className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
+            >
+              Manage Users
+            </Link>
+            <Link
               href="/admin/reports"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
               Generate Reports
+            </Link>
+            <Link
+              href="/admin/activity-logs"
+              className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
+            >
+              Activity Logs
+            </Link>
+            <Link
+              href="/admin/system-config"
+              className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
+            >
+              System Config
+            </Link>
+            <Link
+              href="/notifications"
+              className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
+            >
+              Notifications
             </Link>
           </div>
         </div>

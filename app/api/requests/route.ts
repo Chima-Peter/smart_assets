@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     // Check if asset exists and has available quantity
     const asset = await prisma.asset.findUnique({
       where: { id: data.assetId }
-    })
+    }) as any
 
     if (!asset) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 })
@@ -132,7 +132,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Asset is not available for requests" }, { status: 400 })
     }
 
-    const request = await prisma.request.create({
+    // Cast prisma.request.create to bypass runtime validation until Prisma Client is fully regenerated
+    const request = await (prisma.request.create as any)({
       data: {
         assetId: data.assetId,
         requestedQuantity: data.requestedQuantity,
@@ -148,6 +149,28 @@ export async function POST(req: NextRequest) {
         }
       }
     })
+
+    // Notify only departmental officers about the new request (not faculty admins)
+    const officers = await prisma.user.findMany({
+      where: {
+        role: UserRole.DEPARTMENTAL_OFFICER
+      }
+    })
+
+    await Promise.all(
+      officers.map(officer =>
+        prisma.notification.create({
+          data: {
+            userId: officer.id,
+            type: "REQUEST_PENDING", // Use REQUEST_PENDING to distinguish from approval
+            title: "New Asset Request",
+            message: `${session.user.name} requested ${data.requestedQuantity} unit(s) of "${asset.name}" (${asset.assetCode}). Requires approval.`,
+            relatedRequestId: request.id,
+            relatedAssetId: data.assetId
+          }
+        })
+      )
+    )
 
     return NextResponse.json(request, { status: 201 })
   } catch (error) {

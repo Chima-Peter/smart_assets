@@ -35,6 +35,13 @@ export default function AdminUsersPage() {
     department: "",
     employeeId: "",
   })
+
+  // Update employeeId when role changes
+  useEffect(() => {
+    if ((formData.role as UserRole) === UserRole.COURSE_REP) {
+      setFormData(prev => ({ ...prev, employeeId: "" }))
+    }
+  }, [formData.role])
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
 
@@ -69,8 +76,8 @@ export default function AdminUsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          department: formData.department || undefined,
-          employeeId: formData.employeeId || undefined,
+          // For course rep, don't send employeeId
+          employeeId: (formData.role as UserRole) === UserRole.COURSE_REP ? undefined : (formData.employeeId || undefined),
         }),
       })
 
@@ -196,23 +203,27 @@ export default function AdminUsersPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">Department</label>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">Department *</label>
                   <input
                     type="text"
+                    required
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     className="w-full px-3 py-2 border-2 border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">Employee ID</label>
-                  <input
-                    type="text"
-                    value={formData.employeeId}
-                    onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                    className="w-full px-3 py-2 border-2 border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium"
-                  />
-                </div>
+                {(formData.role as UserRole) !== UserRole.COURSE_REP && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-900 mb-2">Employee ID *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.employeeId}
+                      onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                      className="w-full px-3 py-2 border-2 border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium"
+                    />
+                  </div>
+                )}
               </div>
               <button
                 type="submit"

@@ -84,10 +84,16 @@ export default function LecturerDashboard() {
               My Allocations
             </Link>
             <Link
-              href="/lecturer/transfer"
+              href="/lecturer/activity-logs"
               className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
             >
-              Transfer Asset
+              My Activity
+            </Link>
+            <Link
+              href="/notifications"
+              className="p-4 border-2 border-gray-700 rounded-lg hover:border-gray-900 hover:bg-gray-100 transition-colors text-center font-bold text-gray-900"
+            >
+              Notifications
             </Link>
           </div>
         </div>

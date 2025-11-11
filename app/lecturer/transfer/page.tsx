@@ -64,7 +64,14 @@ export default function LecturerTransferPage() {
         assetsRes.json(),
         usersRes.json(),
       ])
-      setAssets(assetsData)
+      // Filter assets to only show those where lecturer has at least 1 quantity
+      const filteredAssets = Array.isArray(assetsData) 
+        ? assetsData.filter((asset: Asset) => {
+            const allocatedQty = asset.allocatedQuantity ?? 0
+            return allocatedQty >= 1
+          })
+        : []
+      setAssets(filteredAssets)
       // Users API already filters to show lecturers, officers, and admins for lecturers
       setUsers(usersData)
     } catch (error) {
@@ -179,11 +186,20 @@ export default function LecturerTransferPage() {
                   className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
                 >
                   <option value="">-- Select Asset --</option>
-                  {assets.map((asset) => (
-                    <option key={asset.id} value={asset.id}>
-                      {asset.assetCode} - {asset.name}
-                    </option>
-                  ))}
+                  {assets
+                    .filter((asset) => {
+                      // Only show assets where lecturer has at least 1 quantity
+                      const allocatedQty = asset.allocatedQuantity ?? 0
+                      return allocatedQty >= 1
+                    })
+                    .map((asset) => {
+                      const allocatedQty = asset.allocatedQuantity ?? 0
+                      return (
+                        <option key={asset.id} value={asset.id}>
+                          {asset.assetCode} - {asset.name} (You have: {allocatedQty} {asset.unit || "units"})
+                        </option>
+                      )
+                    })}
                 </select>
                 {selectedAsset && (
                   <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">

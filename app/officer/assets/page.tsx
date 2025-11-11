@@ -105,6 +105,7 @@ export default function OfficerAssetsPage() {
       MAINTENANCE: "bg-amber-600 text-white",
       RETIRED: "bg-gray-700 text-white",
       TRANSFER_PENDING: "bg-orange-600 text-white",
+      PENDING_APPROVAL: "bg-yellow-600 text-white",
     }
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-bold ${colors[status] || "bg-gray-700 text-white"}`}>

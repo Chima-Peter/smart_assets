@@ -47,9 +47,12 @@ type ReportData = {
         status: string
         requestedAt: string
       }>
+  maintenance?: Array<any>
+  consumables?: Array<any>
+  depreciation?: Array<any>
 }
 
-export default function AdminReportsPage() {
+export default function OfficerReportsPage() {
   const [reportType, setReportType] = useState<string>("summary")
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -104,9 +107,9 @@ export default function AdminReportsPage() {
     <DashboardLayout>
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Reports</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Department Reports</h1>
           <Link
-            href="/admin/dashboard"
+            href="/officer/dashboard"
             className="w-full sm:w-auto px-4 py-2 bg-gray-800 text-white hover:bg-gray-900 rounded-lg transition-colors font-medium text-center sm:text-left"
           >
             ← Back to Dashboard
@@ -124,9 +127,12 @@ export default function AdminReportsPage() {
                 className="w-full max-w-xs px-3 py-2 border-2 border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
               >
                 <option value="summary">Summary</option>
-                <option value="assets">All Assets</option>
-                <option value="requests">All Requests</option>
-                <option value="transfers">All Transfers</option>
+                <option value="assets">Department Assets</option>
+                <option value="requests">Department Requests</option>
+                <option value="transfers">Department Transfers</option>
+                <option value="maintenance">Maintenance Log</option>
+                <option value="consumables">Consumables Inventory</option>
+                <option value="depreciation">Asset Depreciation</option>
               </select>
             </div>
             {data && (
@@ -189,11 +195,14 @@ export default function AdminReportsPage() {
               </p>
             </div>
           </div>
-        ) : data && (Array.isArray(data.assets) || Array.isArray(data.requests) || Array.isArray(data.transfers)) ? (
+        ) : data && (Array.isArray(data.assets) || Array.isArray(data.requests) || Array.isArray(data.transfers) || Array.isArray(data.maintenance) || Array.isArray(data.consumables) || Array.isArray(data.depreciation)) ? (
           <>
             {(reportType === "assets" && (!data.assets || !Array.isArray(data.assets) || data.assets.length === 0)) ||
               (reportType === "requests" && (!data.requests || !Array.isArray(data.requests) || data.requests.length === 0)) ||
-              (reportType === "transfers" && (!data.transfers || !Array.isArray(data.transfers) || data.transfers.length === 0)) ? (
+              (reportType === "transfers" && (!data.transfers || !Array.isArray(data.transfers) || data.transfers.length === 0)) ||
+              (reportType === "maintenance" && (!data.maintenance || !Array.isArray(data.maintenance) || data.maintenance.length === 0)) ||
+              (reportType === "consumables" && (!data.consumables || !Array.isArray(data.consumables) || data.consumables.length === 0)) ||
+              (reportType === "depreciation" && (!data.depreciation || !Array.isArray(data.depreciation) || data.depreciation.length === 0)) ? (
               <div className="bg-white p-8 rounded-lg shadow border border-gray-300 text-center">
                 <p className="text-gray-900 font-medium">No data available for this report type.</p>
               </div>
@@ -228,6 +237,42 @@ export default function AdminReportsPage() {
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">To</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Status</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Requested At</th>
+                          </>
+                        )}
+                        {reportType === "maintenance" && (
+                          <>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Asset</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Type</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Scheduled Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Completed Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Cost</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Performed By</th>
+                          </>
+                        )}
+                        {reportType === "consumables" && (
+                          <>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Asset Code</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Category</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Total Qty</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Allocated</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Available</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Unit</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Min Stock</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Registered By</th>
+                          </>
+                        )}
+                        {reportType === "depreciation" && (
+                          <>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Asset Code</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Purchase Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Original Value</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Current Value</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Depreciation</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Depreciation %</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase">Age (Years)</th>
                           </>
                         )}
                       </tr>
@@ -279,6 +324,65 @@ export default function AdminReportsPage() {
                           </td>
                         </tr>
                       ))}
+                      {reportType === "maintenance" && Array.isArray(data.maintenance) && data.maintenance.map((item: any) => (
+                        <tr key={item.id} className="hover:bg-gray-100">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-bold text-gray-900">{item.asset?.name || "—"}</div>
+                            <div className="text-xs font-mono text-gray-700">{item.asset?.assetCode || "—"}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.type || "—"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.status || "—"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.scheduledDate ? new Date(item.scheduledDate).toLocaleDateString() : "—"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.completedDate ? new Date(item.completedDate).toLocaleDateString() : "—"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.cost ? `$${item.cost.toFixed(2)}` : "—"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.performedByUser?.name || "—"}
+                          </td>
+                        </tr>
+                      ))}
+                      {reportType === "consumables" && Array.isArray(data.consumables) && data.consumables.map((item: any) => (
+                        <tr key={item.id} className="hover:bg-gray-100">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-bold text-gray-900">{item.assetCode || "—"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{item.name || "—"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.category || "—"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity || 0}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.allocatedQuantity || 0}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{(item.quantity || 0) - (item.allocatedQuantity || 0)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.unit || "units"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.minStockLevel || "—"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.registeredByUser?.name || "—"}</td>
+                        </tr>
+                      ))}
+                      {reportType === "depreciation" && Array.isArray(data.depreciation) && data.depreciation.map((item: any) => (
+                        <tr key={item.id} className="hover:bg-gray-100">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-bold text-gray-900">{item.assetCode || "—"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{item.name || "—"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.purchaseDate ? new Date(item.purchaseDate).toLocaleDateString() : "—"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.originalValue ? `$${item.originalValue.toFixed(2)}` : "—"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.currentValue ? `$${item.currentValue.toFixed(2)}` : "—"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.depreciationAmount ? `$${item.depreciationAmount.toFixed(2)}` : "—"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {`${item.depreciationPercentage || 0}%`}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {`${item.ageInYears || 0} years`}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -291,15 +395,32 @@ export default function AdminReportsPage() {
                       ? data.requests.length
                       : reportType === "transfers" && Array.isArray(data.transfers)
                       ? data.transfers.length
+                      : reportType === "maintenance" && Array.isArray(data.maintenance)
+                      ? data.maintenance.length
+                      : reportType === "consumables" && Array.isArray(data.consumables)
+                      ? data.consumables.length
+                      : reportType === "depreciation" && Array.isArray(data.depreciation)
+                      ? data.depreciation.length
                       : 0}{" "}
                     {reportType === "assets"
                       ? "asset"
                       : reportType === "requests"
                       ? "request"
-                      : "transfer"}
-                    {(reportType === "assets" && Array.isArray(data.assets) && data.assets.length !== 1) ||
+                      : reportType === "transfers"
+                      ? "transfer"
+                      : reportType === "maintenance"
+                      ? "maintenance record"
+                      : reportType === "consumables"
+                      ? "consumable"
+                      : reportType === "depreciation"
+                      ? "depreciation entry"
+                      : ""}
+                    {((reportType === "assets" && Array.isArray(data.assets) && data.assets.length !== 1) ||
                     (reportType === "requests" && Array.isArray(data.requests) && data.requests.length !== 1) ||
-                    (reportType === "transfers" && Array.isArray(data.transfers) && data.transfers.length !== 1)
+                    (reportType === "transfers" && Array.isArray(data.transfers) && data.transfers.length !== 1) ||
+                    (reportType === "maintenance" && Array.isArray(data.maintenance) && data.maintenance.length !== 1) ||
+                    (reportType === "consumables" && Array.isArray(data.consumables) && data.consumables.length !== 1) ||
+                    (reportType === "depreciation" && Array.isArray(data.depreciation) && data.depreciation.length !== 1))
                       ? "s"
                       : ""}
                   </p>

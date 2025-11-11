@@ -27,6 +27,7 @@ interface User {
   name: string
   email: string
   department: string | null
+  role?: string
 }
 
 export default function CreateTransferPage() {
@@ -63,7 +64,11 @@ export default function CreateTransferPage() {
       ])
       // Combine available and allocated assets
       setAssets([...availableAssets, ...allocatedAssets])
-      setUsers(usersData)
+      // Filter out course reps from recipient list
+      const filteredUsers = Array.isArray(usersData) 
+        ? usersData.filter((user: User) => user.role !== "COURSE_REP")
+        : []
+      setUsers(filteredUsers)
     } catch (error) {
       console.error("Error fetching data:", error)
       setMessage({ type: "error", text: "Failed to load data" })

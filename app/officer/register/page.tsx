@@ -151,7 +151,21 @@ export default function RegisterAssetPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setMessage({ type: "error", text: data.error || "Failed to register asset" })
+        // Handle different error formats
+        let errorText = "Failed to register asset"
+        if (data.error) {
+          if (typeof data.error === "string") {
+            errorText = data.error
+          } else if (typeof data.error === "object" && data.error.message) {
+            errorText = data.error.message
+          } else if (Array.isArray(data.error)) {
+            // Handle Zod validation errors array
+            errorText = data.error.map((err: any) => 
+              typeof err === "string" ? err : err.message || JSON.stringify(err)
+            ).join(", ")
+          }
+        }
+        setMessage({ type: "error", text: errorText })
         setLoading(false)
         return
       }

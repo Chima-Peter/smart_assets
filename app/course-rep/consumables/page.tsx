@@ -14,6 +14,9 @@ interface Asset {
   type: AssetType
   category: string | null
   location: string | null
+  quantity: number | null
+  allocatedQuantity: number | null
+  unit: string | null
   registeredByUser: {
     name: string
     email: string
@@ -25,6 +28,13 @@ export default function CourseRepConsumablesPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [selectedAsset, setSelectedAsset] = useState<string>("")
+  const [requestedQuantity, setRequestedQuantity] = useState<string>("1")
+  const [purpose, setPurpose] = useState("")
+  const [notes, setNotes] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [showRequestForm, setShowRequestForm] = useState(false)
 
   const fetchAssets = useCallback(async () => {
     setLoading(true)
@@ -50,6 +60,53 @@ export default function CourseRepConsumablesPage() {
     (asset.category && asset.category.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
+  const selectedAssetData = assets.find(a => a.id === selectedAsset)
+
+  const handleRequest = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedAsset) {
+      setMessage({ type: "error", text: "Please select an asset" })
+      return
+    }
+
+    setSubmitting(true)
+    setMessage(null)
+
+    try {
+      const response = await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assetId: selectedAsset,
+          requestedQuantity: parseInt(requestedQuantity) || 1,
+          purpose: purpose || undefined,
+          notes: notes || undefined,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setMessage({ type: "error", text: data.error || "Failed to create request" })
+        setSubmitting(false)
+        return
+      }
+
+      setMessage({ type: "success", text: "Request created successfully! It is now pending approval." })
+      setSelectedAsset("")
+      setRequestedQuantity("1")
+      setPurpose("")
+      setNotes("")
+      setShowRequestForm(false)
+      await fetchAssets()
+    } catch (err) {
+      console.error("Error creating request:", err)
+      setMessage({ type: "error", text: "An error occurred. Please try again." })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <DashboardLayout>
       <div>
@@ -63,15 +120,140 @@ export default function CourseRepConsumablesPage() {
           </Link>
         </div>
 
-        {/* Search */}
+        {message && (
+          <div
+            className={`mb-6 p-4 rounded-lg border-2 font-bold ${
+              message.type === "success"
+                ? "bg-emerald-50 border-emerald-800 text-emerald-900"
+                : "bg-red-50 border-red-800 text-red-900"
+            }`}
+          >
+            {message.text}
+          </div>
+        )}
+
+        {/* Request Form */}
+        {showRequestForm && (
+          <div className="bg-white p-6 rounded-lg shadow mb-6 border-2 border-gray-800">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Request Consumable</h2>
+            <form onSubmit={handleRequest} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">Select Asset *</label>
+                <select
+                  value={selectedAsset}
+                  onChange={(e) => {
+                    setSelectedAsset(e.target.value)
+                    const asset = assets.find(a => a.id === e.target.value)
+                    if (asset) {
+                      const available = (asset.quantity ?? 1) - (asset.allocatedQuantity ?? 0)
+                      if (available < parseInt(requestedQuantity)) {
+                        setRequestedQuantity(available.toString())
+                      }
+                    }
+                  }}
+                  required
+                  className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
+                >
+                  <option value="">-- Select Consumable --</option>
+                  {filteredAssets.map((asset) => {
+                    const available = (asset.quantity ?? 1) - (asset.allocatedQuantity ?? 0)
+                    return (
+                      <option key={asset.id} value={asset.id}>
+                        {asset.name} ({asset.assetCode}) - Available: {available} {asset.unit || "units"}
+                      </option>
+                    )
+                  })}
+                </select>
+                {selectedAssetData && (
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm font-bold text-gray-900">Available: {(selectedAssetData.quantity ?? 1) - (selectedAssetData.allocatedQuantity ?? 0)} {selectedAssetData.unit || "units"}</p>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">Quantity Needed *</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  max={selectedAssetData ? (selectedAssetData.quantity ?? 1) - (selectedAssetData.allocatedQuantity ?? 0) : undefined}
+                  value={requestedQuantity}
+                  onChange={(e) => setRequestedQuantity(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">Purpose *</label>
+                <textarea
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value)}
+                  required
+                  rows={3}
+                  className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
+                  placeholder="Explain why you need this consumable..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">Additional Notes</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 bg-white text-gray-900 font-medium"
+                  placeholder="Any additional information..."
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    "Submit Request"
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRequestForm(false)
+                    setSelectedAsset("")
+                    setRequestedQuantity("1")
+                    setPurpose("")
+                    setNotes("")
+                    setMessage(null)
+                  }}
+                  className="px-6 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg font-bold transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Search and Request Button */}
         <div className="bg-white p-4 rounded-lg shadow mb-6 border border-gray-300">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name, code, description, or category..."
-            className="w-full px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium shadow-sm"
-          />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by name, code, description, or category..."
+              className="flex-1 px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 font-medium shadow-sm"
+            />
+            <button
+              onClick={() => setShowRequestForm(!showRequestForm)}
+              className="px-6 py-3 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors font-bold whitespace-nowrap"
+            >
+              {showRequestForm ? "Cancel Request" : "+ Request Consumable"}
+            </button>
+          </div>
         </div>
 
         {/* Assets Grid */}
@@ -126,6 +308,14 @@ export default function CourseRepConsumablesPage() {
                     <span className="font-bold text-gray-900">Registered by:</span>
                     <span className="text-gray-700">{asset.registeredByUser.name}</span>
                   </div>
+                  {asset.quantity !== null && (
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-gray-900">Available:</span>
+                      <span className="text-gray-700">
+                        {(asset.quantity ?? 1) - (asset.allocatedQuantity ?? 0)} {asset.unit || "units"}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

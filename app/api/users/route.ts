@@ -11,8 +11,17 @@ const userSchema = z.object({
   password: z.string().min(6),
   name: z.string().min(1),
   role: z.nativeEnum(UserRole),
-  department: z.string().optional(),
+  department: z.string().min(1, "Department is required"),
   employeeId: z.string().optional(),
+}).refine((data) => {
+  // Employee ID is required for all roles except COURSE_REP
+  if (data.role !== UserRole.COURSE_REP && !data.employeeId) {
+    return false
+  }
+  return true
+}, {
+  message: "Employee ID is required for this role",
+  path: ["employeeId"]
 })
 
 export async function GET() {
@@ -52,8 +61,14 @@ export async function GET() {
         select: { department: true }
       })
       const where = currentUser?.department ? { department: currentUser.department } : {}
+      // Exclude course reps from transfer recipient lists
       const users = await prisma.user.findMany({
-        where,
+        where: {
+          ...where,
+          role: {
+            not: UserRole.COURSE_REP
+          }
+        },
         select: {
           id: true,
           email: true,
@@ -144,11 +159,26 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(data.password, 10)
 
+    // For COURSE_REP, employeeId should be null/undefined
+    const userData: {
+      email: string
+      password: string
+      name: string
+      role: UserRole
+      department: string
+      employeeId?: string | null
+    } = {
+      ...data,
+      password: hashedPassword
+    }
+
+    // Set employeeId to null for course reps
+    if (data.role === UserRole.COURSE_REP) {
+      userData.employeeId = null
+    }
+
     const user = await prisma.user.create({
-      data: {
-        ...data,
-        password: hashedPassword
-      },
+      data: userData,
       select: {
         id: true,
         email: true,

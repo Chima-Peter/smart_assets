@@ -32,7 +32,32 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
+    // Get user's department for filtering (if department officer)
+    const userDepartment = (session.user as any).department || null
+
     if (type === "summary") {
+      // For department officers, filter by department
+      const assetWhere = session.user.role === UserRole.DEPARTMENTAL_OFFICER && userDepartment
+        ? { location: userDepartment }
+        : {}
+      
+      const requestWhere = session.user.role === UserRole.DEPARTMENTAL_OFFICER && userDepartment
+        ? {
+            requestedByUser: {
+              department: userDepartment
+            }
+          }
+        : {}
+      
+      const transferWhere = session.user.role === UserRole.DEPARTMENTAL_OFFICER && userDepartment
+        ? {
+            OR: [
+              { fromUser: { department: userDepartment } },
+              { toUser: { department: userDepartment } }
+            ]
+          }
+        : {}
+
       const [
         totalAssets,
         availableAssets,
@@ -42,13 +67,13 @@ export async function GET(req: NextRequest) {
         totalTransfers,
         pendingTransfers
       ] = await Promise.all([
-        prisma.asset.count(),
-        prisma.asset.count({ where: { status: AssetStatus.AVAILABLE } }),
-        prisma.asset.count({ where: { status: AssetStatus.ALLOCATED } }),
-        prisma.request.count(),
-        prisma.request.count({ where: { status: RequestStatus.PENDING } }),
-        prisma.transfer.count(),
-        prisma.transfer.count({ where: { status: TransferStatus.PENDING } })
+        prisma.asset.count({ where: assetWhere }),
+        prisma.asset.count({ where: { ...assetWhere, status: AssetStatus.AVAILABLE } }),
+        prisma.asset.count({ where: { ...assetWhere, status: AssetStatus.ALLOCATED } }),
+        prisma.request.count({ where: requestWhere }),
+        prisma.request.count({ where: { ...requestWhere, status: RequestStatus.PENDING } }),
+        prisma.transfer.count({ where: transferWhere }),
+        prisma.transfer.count({ where: { ...transferWhere, status: TransferStatus.PENDING } })
       ])
 
       return NextResponse.json({
@@ -69,7 +94,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === "assets") {
+      // For department officers, filter by department
+      const where = session.user.role === UserRole.DEPARTMENTAL_OFFICER && userDepartment
+        ? { location: userDepartment }
+        : {}
+      
       const assets = await prisma.asset.findMany({
+        where,
         include: {
           registeredByUser: { select: { name: true } },
           allocatedToUser: { select: { name: true } }
@@ -80,7 +111,17 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === "requests") {
+      // For department officers, filter by department
+      const where = session.user.role === UserRole.DEPARTMENTAL_OFFICER && userDepartment
+        ? {
+            requestedByUser: {
+              department: userDepartment
+            }
+          }
+        : {}
+      
       const requests = await prisma.request.findMany({
+        where,
         include: {
           asset: { select: { id: true, name: true, assetCode: true } },
           requestedByUser: { select: { name: true, email: true } }
@@ -91,7 +132,18 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === "transfers") {
+      // For department officers, filter by department
+      const where = session.user.role === UserRole.DEPARTMENTAL_OFFICER && userDepartment
+        ? {
+            OR: [
+              { fromUser: { department: userDepartment } },
+              { toUser: { department: userDepartment } }
+            ]
+          }
+        : {}
+      
       const transfers = await prisma.transfer.findMany({
+        where,
         include: {
           asset: { select: { id: true, name: true, assetCode: true } },
           fromUser: { select: { name: true, email: true } },
@@ -103,7 +155,17 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === "maintenance") {
+      // For department officers, filter by department
+      const where = session.user.role === UserRole.DEPARTMENTAL_OFFICER && userDepartment
+        ? {
+            asset: {
+              location: userDepartment
+            }
+          }
+        : {}
+      
       const maintenance = await prisma.maintenance.findMany({
+        where,
         include: {
           asset: {
             select: {
@@ -126,10 +188,17 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === "consumables") {
+      // For department officers, filter by department
+      const where: any = {
+        type: "CONSUMABLE"
+      }
+      
+      if (session.user.role === UserRole.DEPARTMENTAL_OFFICER && userDepartment) {
+        where.location = userDepartment
+      }
+      
       const consumables = await prisma.asset.findMany({
-        where: {
-          type: "CONSUMABLE",
-        },
+        where,
         include: {
           registeredByUser: { select: { name: true } },
         },
@@ -139,11 +208,20 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === "depreciation") {
+      // For department officers, filter by department
+      const where = session.user.role === UserRole.DEPARTMENTAL_OFFICER && userDepartment
+        ? {
+            purchaseDate: { not: null },
+            purchasePrice: { not: null },
+            location: userDepartment
+          }
+        : {
+            purchaseDate: { not: null },
+            purchasePrice: { not: null },
+          }
+      
       const assets = await prisma.asset.findMany({
-        where: {
-          purchaseDate: { not: null },
-          purchasePrice: { not: null },
-        },
+        where,
         select: {
           id: true,
           name: true,
